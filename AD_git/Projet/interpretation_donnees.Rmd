@@ -1,0 +1,122 @@
+---
+title: "Interprétation des données"
+output: html_document
+---
+
+```{r}
+############## 2ème ETAPE #############
+
+table<-read.table("donnees_ocde_modif.csv",header=T,sep=',')
+
+```
+
+
+```{r}
+# Certains graphes utiles ne se font pas via R-Shiny
+# On a donc décidé de les afficher ici
+library("FactoMineR")
+library("factoextra")
+library("corrplot")
+
+# permet de voir la corrélation entre les différentes
+# données de notre tableau donnees_ocde_modif
+c<-cor(table)
+corrplot(c)
+
+# Apres une avoir lancé une première fois le code
+# nous avons remarqué que Espagne, Grèce et Suède avaient une
+# contribution de plus de 20% pour les axes
+# on utilise donc ind.sup pour pouvoir les utiliser sans
+# que cela affecte la représentation des autres pays.
+pca <- PCA(table, graph = FALSE,ind.sup = c(10,22,23))
+
+# permet de voir les valeurs propres et leur comportement
+fviz_eig(pca, addlabels = TRUE, ylim = c(0, 70))
+
+
+# permet de savoir ce que les axes représentent et expriment
+fviz_pca_var(pca, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE # Eviter le chevauchement des textes 
+             )
+
+
+# Contributions des variables à la première composante 
+fviz_contrib(pca, choice = "var", axes = 1, top = 18)
+
+
+# Contributions of variables à la deuxième composante 
+fviz_contrib(pca, choice = "var", axes = 2, top = 18)
+
+
+
+```
+
+```{r}
+#individus utilisé pour l'ACP
+coor<-pca$ind$coord
+coor<-coor[,1:2]
+coor<-as.data.frame(coor)
+
+# les individus supplémentaires
+indv_supp<-matrix(c(0.708,-6.876,-11.878,9.949,7.084,4.457),nrow=3)
+indv_supp<-as.data.frame((indv_supp))
+names<-c("Dim.1","Dim.2")
+colnames(indv_supp)<-names
+row.names(indv_supp)<-c("Sweden","Spain","Greece")
+
+#ensemble des individus
+X<-rbind(coor,indv_supp)
+
+#Choix du nombre de groupes
+fviz_nbclust(X,FUNcluster = kmeans)
+
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+
+# CAH avec Ward + hclust
+hc <- hclust(dist, method = "ward.D2")
+# Les regroupements pas a pas
+hc$merge
+
+# La hauteur des branches est la distance
+hc$height
+# Arbre
+plot(hc, cex = 0.5)
+
+
+
+
+
+##CAH avec eclust de factoextra
+hc2 <- eclust(X, k.max=3,"hclust")
+# dendrogamme
+fviz_dend(hc2) 
+## Couper le dendogramme pour avoir 2 classes
+coupe <- hcut(X, k = 2, hc_method = "complete")
+
+
+# Visualiser le dendrogramme avec les 2 classes
+fviz_dend(coupe, show_labels = FALSE, rect = TRUE)
+# Visualiser les classes en fonction des variables
+fviz_cluster(coupe, ellipse.type = "convex")
+# Visualiser la silhouhette 
+fviz_silhouette(coupe)
+# Affiche 
+cut<-cutree(hc,k=2)
+print(sort(cut))
+
+
+#Comparaison de l'ACP et de la classification
+coor_bleu<-X[c(3,8,13,14,15,22,31,32),] # les pays du groupe bleue
+coor_rouge<-X[c(-3,-8,-13,-14,-15,-22,-31,-32),] # les pays du groupe rouge
+
+#On trace le graphique individus de l'ACP en colorant les points selon leur groupe
+plot(coor_rouge[,1],coor_rouge[,2],col='red', xlim=c(-15,15), ylim=c(-15,15), main="Repartition des pays selon le groupe dans les axes de l'ACP",axes=TRUE,xlab="Dim 1", ylab="Dim 2")
+points(coor_bleu[,1],coor_bleu[,2],col='blue')
+legend(7,15,legend=c("Groupe bleu","Groupe rouge"),col=c("blue","red"),pch=1)
+
+
+```
+
+

@@ -1,0 +1,39 @@
+---
+title: "ROC Titanic"
+output: html_document
+---
+
+```{r q1}
+
+tit<-read.csv("titanic.txt",sep=" ", header =  T)
+summary(tit)
+
+glm<-glm(tit$Survived~.,data=tit, family =  "binomial")
+summary(glm)
+
+
+
+library("gplots")
+library("ROCR")
+P<-tit$Class + tit$Age + tit$Sex
+Y<-tit$Survived
+pred<- prediction(P,Y)
+perf <- performance(pred, "tpr", "fpr")
+
+plot(perf, colorize=T)
+
+
+perf@y.values[[1]]
+
+library(verification)
+#roc.plot(Y,P,xlab = "False Positive Rate",ylab = "True Positive Rate", main = "", CI = TRUE,n.boot = 100, plot = "both", binormal = TRUE)
+
+
+library(pROC)
+PROC<-plot.roc(Y,P,main="", percent=TRUE,ci=TRUE)
+SE<-ci.se(PROC,specificities=seq(0, 100, 5))
+plot(SE, type="shape", col="light blue")
+
+
+
+```

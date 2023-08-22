@@ -1,0 +1,154 @@
+---
+title: "Création de la nouvelle table"
+output: html_document
+---
+
+```{r}
+############## 1ère ETAPE #############
+
+table<-read.table("donnees_ocde_emploi.csv",header=T,sep=',')
+
+col1<-c(15,16,18,19) #colonnes des varianbles rempli de N/A
+table<-table[,-col1]
+
+col2<-c(1,3,5,7,9,11,12,13,14) #varaibles identiques, inutiles
+table<-table[,-col2]
+
+#On s'intéresse à l'année 2018 :
+table2018<-table[table$Year==2018,]
+table2018<-table2018[,-c(5)]#colonne inutile
+
+summary(table2018$Country)
+
+#on enlève les données incompletes.
+# Ici on remarque qu'il manque des informations pour la Slovaquie
+# En effet, la Slovaquie n'a pas 18 données
+table2018<-table2018[table2018$Country!='Slovak Republic',]
+
+# Une alternative consistait à enlever directement tous les pays en dessous de 18 données.
+
+#On vérifie que l'on a bien enlevé la Slovquie
+summary(table2018$Country)
+
+#La Slovaquie est bien à 0: on a bien enlevé le pays
+
+
+
+#manipulation de la base de donnée
+# On va stocker les données pour pouvoir
+# les manipuler plus facilement.
+# On va donc créer la variable Emploi-Masculin-Etranger
+# et lui appliquer sous forme de vecteur les données de
+# chaque pays.
+
+
+# Commencons par l'Emploi
+#----------------------
+E<-table2018[table2018$Rate=='Employment rate',]
+
+E_M<-E[E$Gender=='Men',]
+E_M_F<-E_M[E_M$Place.of.birth=='Foreign-born',]
+E_M_N<-E_M[E_M$Place.of.birth=='Native-born',]
+
+E_W<-E[E$Gender=='Women',]
+E_W_F<-E_W[E_W$Place.of.birth=='Foreign-born',]
+E_W_N<-E_W[E_W$Place.of.birth=='Native-born',]
+
+E_T<-E[E$Gender=='Total',]
+E_T_F<-E_T[E_T$Place.of.birth=='Foreign-born',]
+E_T_N<-E_T[E_T$Place.of.birth=='Native-born',]
+
+Pays<-E_M_F$Country #pays
+E_M_F<-E_M_F$Value #taux d'emploi, homme, étranger
+E_M_N<-E_M_N$Value #taux d'emploi, homme, natif
+E_W_F<-E_W_F$Value #taux d'emploi, femme, née a l'entranger
+E_W_N<-E_W_N$Value #taux d'emploi, femme, native
+E_T_F<-E_T_F$Value #taux d'emploi, total, etranger
+E_T_N<-E_T_N$Value #taux d'emploi, total, natif
+
+
+#on recrée une table avec les informations que l'on a extraites
+M<-matrix(ncol=18,nrow=length(E_M_F))
+TAB<-data.frame(M,row.names = Pays)
+TAB[,1]<-E_M_F
+TAB[,2]<-E_M_N
+TAB[,3]<-E_W_F
+TAB[,4]<-E_W_N
+TAB[,5]<-E_T_F
+TAB[,6]<-E_T_N
+
+
+
+#Continuons avec le Chomage
+#----------------------
+
+U<-table2018[table2018$Rate=='Unemployment rate',]
+U_M<-U[U$Gender=='Men',]
+U_M_F<-U_M[U_M$Place.of.birth=='Foreign-born',]
+U_M_N<-U_M[U_M$Place.of.birth=='Native-born',]
+U_W<-U[U$Gender=='Women',]
+U_W_F<-U_W[U_W$Place.of.birth=='Foreign-born',]
+U_W_N<-U_W[U_W$Place.of.birth=='Native-born',]
+
+U_T<-U[U$Gender=='Total',]
+U_T_F<-U_T[U_T$Place.of.birth=='Foreign-born',]
+U_T_N<-U_T[U_T$Place.of.birth=='Native-born',]
+
+U_M_F<-U_M_F$Value #taux chomage, homme, étranger
+U_M_N<-U_M_N$Value #taux chomage, homme, natif
+U_W_F<-U_W_F$Value #taux chomage, femme, née a l'entranger
+U_W_N<-U_W_N$Value #taux chomage, femme, native
+U_T_F<-U_T_F$Value #taux chomage, total, etranger
+U_T_N<-U_T_N$Value #taux chomage, total, natif
+
+#on continue à remplir notre nouvelle table
+TAB[,7]<-U_M_F
+TAB[,8]<-U_M_N
+TAB[,9]<-U_W_F
+TAB[,10]<-U_W_N
+TAB[,11]<-U_T_F
+TAB[,12]<-U_T_N
+
+
+
+
+# Enfin, la Participation
+#----------------------
+P<-table2018[table2018$Rate=='Participation rate',]
+P_M<-P[P$Gender=='Men',]
+P_M_F<-P_M[P_M$Place.of.birth=='Foreign-born',]
+P_M_N<-P_M[P_M$Place.of.birth=='Native-born',]
+P_W<-P[P$Gender=='Women',]
+P_W_F<-P_W[P_W$Place.of.birth=='Foreign-born',]
+P_W_N<-P_W[P_W$Place.of.birth=='Native-born',]
+
+P_T<-P[P$Gender=='Total',]
+P_T_F<-P_T[P_T$Place.of.birth=='Foreign-born',]
+P_T_N<-P_T[P_T$Place.of.birth=='Native-born',]
+
+P_M_F<-P_M_F$Value #taux de participation, total, étranger
+P_M_N<-P_M_N$Value #taux de participation, total, natif
+P_W_F<-P_W_F$Value #taux de participation, total, née a l'entranger
+P_W_N<-P_W_N$Value #taux de participation, total, native
+P_T_F<-P_T_F$Value #taux de participation, total, née a l'entranger
+P_T_N<-P_T_N$Value #taux de participation, total, native
+
+# on finit de remplir notre nouveau tableau
+TAB[,13]<-P_M_F
+TAB[,14]<-P_M_N
+TAB[,15]<-P_W_F
+TAB[,16]<-P_W_N
+TAB[,17]<-P_T_F
+TAB[,18]<-P_T_N
+
+
+# Il faut maintenant nommer nos nouvelles colonnes
+#----------------------
+names<-c("EMF","EMN","EWF","EWN","ETF","ETN","UMF","UMN","UWF","UWN","UTF","UTN","PMF","PMN","PWF","PWN","PTF","PTN")
+colnames(TAB)<-names
+
+#on stocke le tableau que l'on a crée sous format csv
+write.table(TAB,"donnees_ocde_modif.csv",row.names=TRUE,sep=",",dec=".") # a mettre dans la console
+```
+
+

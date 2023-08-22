@@ -1,0 +1,131 @@
+---
+title: "Correction TP2 AD"
+output: html_document
+---
+
+```{r correction}
+
+#--- Exercice 1
+donnees=read.csv("titanic.csv", header=T)
+for(i in 1:ncol(donnees)) {donnees[,i] = as.factor(donnees[,i])}
+head(donnees)
+levels(donnees$Age)=c("Enfant","Adulte")
+levels(donnees$Sexe)=c("Femme","Homme")
+levels(donnees$Survie)=c("Décédé","Survivant")
+levels(donnees$Classe) = c("équipage", "première", "seconde", "troisième")
+head(donnees)
+
+# 1- Tableaux de contingence et  tests de chi2
+
+#---pour les variables classe et survie
+tclasesurvie=table(donnees$Classe, donnees$Survie) 
+### Tableau de contingence
+tclasesurvie
+
+# Le tableau des effectifs sous l'hypothèse d'indépendance
+testchi=chisq.test(tclasesurvie)
+testchi
+## Valeurs théoriques sous hypothèse d'independance
+testchi$expected
+##Test du chi2
+summary(tclasesurvie)
+# d'apres le chisq il y a pas un lien entre la survie et la classe 
+
+#---pour les variables age et survie
+tagesurvie=table(donnees$Age, donnees$Survie) 
+tagesurvie
+
+# Donnes le tableau des effectifs sous l'hypothèse d'indépendance
+testchi=chisq.test(tagesurvie)
+testchi$expected
+##Test du chi2
+summary(tagesurvie)
+# d'apres le chisq, il y a pas un lien entre la survie et l'age. 
+
+#---pour les variables sexe et survie
+tsexesurvie=table(donnees$Sexe, donnees$Survie) 
+tsexesurvie
+
+# Donnes le tableau des effectifs sous l'hypothèse d'indépendance
+testchi=chisq.test(tsexesurvie)
+testchi$expected
+# d'apres le chisq il y a pas une lien entre les deux variables. D'ailleurs, il n'y a de lien entre aucune varaibles lié au bio et les caracteristiques des populatuon!
+summary(tsexesurvie)
+
+# d'apres le chisq il y a pas un lien entre le sexe et la survie. 
+
+#Regardons les profils lignes et colonnes
+
+n=sum(tclasesurvie); gc=apply(tclasesurvie,2,sum)/n; 
+gr=apply(tclasesurvie,1,sum)/n 
+# Métriques
+Dr=diag(gr); Dc=diag(gc)
+Dr1=diag(1/gr); Dc1=diag(1/gc)
+# Profils lignes et colonnes
+Xcol=t(tclasesurvie)%*%Dr1/n; Xrow= tclasesurvie%*%Dc1/n
+Xrow;Xcol
+# On fait l'afc des deux variables Survie et classe
+
+library(FactoMineR)
+afc=CA(tclasesurvie,graph = TRUE)
+## Un seul axe factoriel donc pas de graphiques avec le package
+## un plot simple peut être utilisé
+afc$eig
+afc$col
+afc$row
+
+
+plot(1:4,afc$row$coord,xlab="", ylab="", pch=c("E", "P", "S", "T"), col="blue")
+points(1:2,afc$col$coord, xlab="", ylab="", pch=c("D", "S"), col="red")
+
+#--- Exercice 2
+
+bebe=read.csv("bebe.txt", header=T, sep="")
+
+head(bebe)
+plot(bebe$age) 
+#####################
+bebeagenorm=bebe[which(bebe$age<60),]
+plot(bebeagenorm$age) 
+
+### Poids du bébé
+hist(bebeagenorm$bwt,freq=TRUE, col="red", main="", xlab="", ylab="") 
+title(main="Histogramme du poids du bébé à la naissance",xlab="Poids à la naissance", ylab="histogramme")
+summary(bebeagenorm$bwt)
+
+############################################################
+plot(bebeagenorm$weight)
+
+bebenorm=bebeagenorm[which(bebeagenorm$weight<200),]
+
+
+plot(bebenorm$weight)
+
+
+plot(x=bebenorm$weight,y=bebenorm$bwt, main="Relation entre poids de la mère et du bébé",xlab="Poids de la mère (en kgs)", ylab="Poids à la naissance (en kgs)") 
+
+bebe=bebenorm
+
+summary(bebe$bwt)
+summary(bebe$weight)
+bebe$bwtclasse=cut(bebe$bwt, c(0, 3, 3.5, 4, 6))
+table(bebe$bwtclasse)
+
+bebe$weightclasse=cut(bebe$weight, c(0, 50, 60, 70,120))
+table(bebe$weightclasse)
+
+
+#---test du chi-deux
+tablecroisee=table(bebe$weightclasse, bebe$bwtclasse) 
+tablecroisee
+summary(tablecroisee)
+# Donnes le tableau des effectifs sous l'hypothèse d'indépendance
+testchi=chisq.test(tablecroisee)
+testchi$expected
+# d'apres le chisq il y a pas une lien entre les deux variables. 
+afc=CA(tablecroisee,graph = TRUE)
+afc$eig
+afc$col
+afc$row
+
+```

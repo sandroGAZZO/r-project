@@ -1,0 +1,255 @@
+\documentclass[a4paper]{article}
+\usepackage[frenchb]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{Sweave}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{geometry}
+\geometry{hmargin=2.5cm,vmargin=1.5cm}
+
+\newlength{\fancyvrbtopsep}
+\newlength{\fancyvrbpartopsep}
+\makeatletter
+\FV@AddToHook{\FV@ListParameterHook}{\topsep=\fancyvrbtopsep\partopsep=\fancyvrbpartopsep}
+\makeatother
+\setlength{\fancyvrbtopsep}{1pt}
+\setlength{\fancyvrbpartopsep}{1pt}
+\newcommand{\R}{\textbf{R}}
+
+\title{AFC avec le logiciel R}
+\date{}
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\setkeys{Gin}{width=0.5\textwidth}
+\maketitle{}
+\paragraph{Objectifs}
+\begin{itemize}
+\item Connaître les principales fonctions pour effectuer une AFC avec \R{} 
+\textbf{FactoMineR}.
+\item Connaître les principales fonctions liées à la représentation des profils lignes et colonnes sur les plans factoriels de l'AFC avec \R{} 
+\textbf{factoextra}.
+\end{itemize}
+
+\section{Principale fonction pour effectuer une AFC avec \R{} 
+\textbf{FactoMineR}}
+
+La fonction \textbf{CA} de la librairie \textbf{FactoMineR} permet de réaliser de l'AFC d'un tableau de données sous forme d'un tableau de contingence.\\
+Une entreprise veut choisir un nom pour un nouveau produit. Elle hésite entre 12 marques : Alezan, Cocker, Corsaire, Directoire, Ducat, Escale, Fontenoy, Hotesse, Icare, Orly, Pavois et Zodiaque.
+Pour faire un choix, un échantillon de clients potentiels a été interrogé. Onze attributs leur étaient proposés. Pour chaque attribut, la personne
+ interrogée devait désigner une ou plusieurs marques auxquelles l’attribut se rapportait le mieux.
+<<results=hide>>=
+# Charger les données et le tableau de contingence
+marques=read.table("/Users/sophiedabo/Nextcloud/Statistique multivariée/donnees_afc_contin.csv",header=FALSE,sep=';')
+nom=marques[,1]
+nom
+head(marques)
+marques=as.data.frame(marques[,-1])
+marques=t(marques)
+row.names(marques)=c("vieux", 	"riche",	"elegant", "ridicule","race", "mievre", "distingue", "vulgaire", "femme", "homme", "nature")
+colnames(marques)=nom
+@
+\subsection{Explorer  la relation entre les 2 variables qualitatives de l'AFC}
+Etude du lien entre les deux variables marque et atribut. Faire le test de chi2. Au vu du résultat on rejette l'hypothèse de non indépendance (la pvalue du test est <2.2e-16), il y a un lien entre les deux variables. On peut donc réaliser une AFC. 
+<<>>=
+chisq.test(marques)
+@
+Les profils lignes et colonnes
+<<>>=
+n=sum(marques); gc=apply(marques,2,sum)/n; gr=apply(marques,1,sum)/n 
+# Métriques
+Dr=diag(gr); Dc=diag(gc)
+Dr1=diag(1/gr); Dc1=diag(1/gc)
+# Profils lignes et colonnes
+Xcol=t(marques)%*%Dr1/n; Xrow= marques%*%Dc1/n
+@
+\subsection{Réalisation de l'AFC}
+
+<<fig=TRUE>>=
+library(FactoMineR)
+library(factoextra)
+ca <- CA(marques, graph = TRUE)
+print(ca)
+ca$eig
+ca$col
+ca$row
+#Resultats des profils colonnes
+col <- get_ca_col(ca) 
+#ou get_ca(ca, "col")
+#Resultats des profils lignes
+row <- get_ca_row(ca)
+#ou get_ca(ca, "row")
+@
+
+<<fig=TRUE>>=
+#qualite des axes
+par(mfrow=c(1,2))
+barplot(ca$eig[,2], main= "inertie")
+barplot(ca$eig[,3], main="inertie cummulee")
+# observons que les v.p. sont infererieures à 1.
+fviz_ca_row(ca, col.row = "cos2",
+   gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+   repel = TRUE)
+fviz_ca_col(ca, col.col = "contrib",
+   gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"))
+ fviz_ca_biplot(ca,col.row= "cos2",col.col="cos2",
+   repel = TRUE)      
+@
+\subsection{Analyse des axes, des modalités des variables}
+\textbf{1. Dans le tableau des fr\'equences lignes,  on peut lire $20,18\%$ \`a l'intersection de la ligne  \textquotedbl Homme\textquotedbl \hspace{1mm} et de la colonne \textquotedbl Corsaire\textquotedbl. Comment a \'et\'e obtenue cette valeur? Que signifie-t-elle?}
+\\ Les fr\'equences lignes sont obtenues en divisant l'effectif d'une cellule par l'effectif de la ligne correspondante. $20,18\%$ est la part pour laquelle l'attribut \textquotedbl Homme\textquotedbl \hspace{1mm} a \'et\'e utilis\'e   pour d\'esigner la marque \textquotedbl Corsaire\textquotedbl.
+\bigskip
+\\\textbf{2.  Comparer qualitativement le profil de la marque "Corsaire" au profil moyen}
+\\ Moyenne des lignes du profil colonne:
+\begin{center}
+\begin{tabular}{|l||l|}
+\hline   
+Distingu\'e   &    0.092 \\    
+Elegant    &   0.093    \\
+Femme      &   0.093      \\
+Homme        & 0.101    \\
+Mievre        & 0.077        \\
+Nature       &  0.088     \\
+Race        &  0.082      \\
+Riche       &   0.098      \\
+Ridicule    &   0.094    \\
+Vieux       &  0.099    \\
+Vulgaire    &   0.099         \\
+\hline
+\end{tabular}
+\end{center}
+\noindent Alors que le profil colonne moyen est relativement uniforme (frequences $7.7\%$ \`a $10.1\%$), le profil de la modalit\'e Corsaire fait apparaitre des fr\'equences tr\`es faibles ($0.0094$ apparait 4 fois) et des fr\'equences \'elev\'ees ($0.3018$, $0.2170$). Ce profil est donc tr\`es \'eloign\'e du profil moyen.
+\bigskip 
+\\ \textbf{3. Au vu du tableau des valeurs propres, combien de variables factorielles faudrait-il \'etudier dans le cadre d'une \'etude compl\`ete des donn\'ees observ\'ees? }
+\\L'AFC fournit ici 10 valeurs propres, soit une moyenne de $10\%$ d'inertie associ\'ee \`a chaque axe. D'autre part, on observe une brusque diminution de l'inertie associ\'ee \`a partir du 6\`e axe. Autrement dit, la m\'ethode de la moyenne, aussi bien que la m\'ethode du coude, nous conduiraient ici \`a \'etudier les 5 premiers axes.
+\bigskip
+\\\textbf{4. On consid\`ere le nuage des attributs. Quels sont les individus dont la contribution est sup\'erieure \`a la moyenne? Pour chacun d'eux, pr\'eciser le signe de la coordonn\'ee correspondante.}
+\\Le nombre d'attribut est 11: le seuil envisag\'e est donc \`a $9.09\%$ de contribution \`a l'inertie du premier axe: les individus dont la contribution est sup\'erieure \`a la moyenne sont : Vulgaire ($+0.8348$), Distingu\'e ($-0.5959$), Ridicule ($+0.5708$), Riche ($-0.4792$), Elegant ($-0.4334$).
+\\ Cet axe oppose donc des attributs dont leur sens est contraire.
+\bigskip 
+\\ \textbf{M\^eme question pour le nuage des marques envisag\'ees.}
+\\ Le seuil est de $1/12=8.33\%$ : les individus dont la contribution est sup\'erieure \`a la moyenne sont: Corsaire ($+0.8579$), Zodiaque ($+0.5699$), Fontenoy ($-0.5078$), Hotesse ($-0.3453$).
+\\ Les marques Hotesse et Fontenoy s'opposent \`a Corsaire et Zodiaque. Les premi\`eres seront proches d'attributs comme Vulgaire et Ridicule, les secondes plus proches de Distingu\'e, Riche et Elegant.
+\bigskip 
+\\ \textbf{Mener une \'etude analogue pour la deuxi\`eme variable.}
+\\ Attributs : Femme ($-0.7333$), Race ($0.4383$), Ridicule ($0.4179$). 
+\\ Marques : Hotesse ($-0.5308$), Escale ($-0.6436$), Cocker($+0.3828$), Alezan ($+0.3482$).
+\\ Une part importante de l'inertie de cet axe est associ\'e \`a l'attribut Femme et des marques telles que Escale ou Hotesse.
+\bigskip
+\\ \textbf{Repr\'esenter graphiquement les donn\'ees dans le premier plan factoriel. Et faire une synth\`ese des deux \'etudes pr\'ec\'edentes en d\'ecrivant les r\'esultats obtenus dans le premier plan factoriel.}
+\\L'\'etude des deux premiers axes et du graphique, permet de cerner trois zones : 
+
+\begin{itemize}
+\item les marques \textquotedbl Zodiaque\textquotedbl, \textquotedbl Corsaire\textquotedbl \hspace{1mm} li\'ees \`a des attributs tels que \textquotedbl vulgaire\textquotedbl \hspace{1mm} et \textquotedbl ridicule\textquotedbl;
+\item une forte liaison entre \textquotedbl Escale\textquotedbl \hspace{1mm} et \textquotedbl femme\textquotedbl, \`a laquelle s'ajoutent des marques telles que \textquotedbl H\^otesse\textquotedbl \hspace{1mm} ou \textquotedbl Orly\textquotedbl, qui sont \'egalement li\'ees \`a \textquotedbl distingu\'e\textquotedbl;
+\item des marques telles que \textquotedbl Directoire \textquotedbl, et dans une moindre mesure, \textquotedbl Pavois\textquotedbl \hspace{1mm} ou \textquotedbl Ducat\textquotedbl, li\'ees \`a l'attribut \textquotedbl vieux\textquotedbl.
+\end{itemize}
+\medskip
+\noindent \textbf{5. Compte tenu du cahier des charges pos\'e au d\'epart : \textquotedbl \textit{Le produit doit paraitre de qualit\'e sup\'erieure, prestigieux, luxueux, convenant \`a un public masculin, connaisseur, raffin\'e, distingu\'e, de niveau socio \'economique \'elev\'e \ldots}\textquotedbl, \`a votre avis quelle marque a finalement \'et\'e retenue?}
+\\ Compte tenu du cahier des charges pos\'e au d\'epart aucune des marques cit\'ees dans l'analyse pr\'ec\'edente ne convient. La zone la plus int\'eressante du graphique est celle contenant les points \textquotedbl distingu\'e\textquotedbl, \textquotedbl riche\textquotedbl, \textquotedbl \'el\'egant\textquotedbl. Donc, la marque retenue pourrait \^etre \textquotedbl Fontenoy\textquotedbl.
+
+\subsection{Exercices}
+\subsubsection*{Exercice 1}
+On considère le naufrage du Titanic, on souhaite savoir si la variable \emph{classe}  (notée $X$) qui prend les modalités \emph{première}, \emph{seconde}, \emph{troisième} et \emph{équipage} est indépendante de la variable \emph{status} (resp. \emph{age} prenant les modalités \emph{adulte} et \emph{enfant}) (notée $Y$) qui prend les modalités \emph{survivant} et \emph{décédé}. Pour cela, on prélève un échantillon de taille $n$ et on appelle $N_{ij}$ le nombre d'individus possédant les modalités $X=i$ et $Y=j$.
+Les données sont disponibles sur le fichier \texttt{Titanic.csv} contenant les colonnes Classe (0 = équipage, 1 = première classe, 2 = seconde classe , 3 = troisième classe), Age   (1 = adulte, 0 = enfant), Sexe   (1 = homme, 0 = femme) et Survie (1 = survivant, 0 = décédé).
+\begin{enumerate}
+\item Charger la table \texttt{titanic.csv} dans \R. 
+\item Renomer les modalités des variables (par exmple, pour \emph{age} remplacer les modalités "1" et "0" par "Adulte" et "Enfant",...) avec la fonction \emph{levels}
+\item Donner le tableau des effectifs croisés des variables \emph{classe} et \emph{survie} à l'aide de la fonction \texttt{table} et compléter le tableau ci-dessous. Calculer les effectifs de chacune des modalités des variables \emph{classe} et \emph{survie}. Ces effectifs pourront s'écrire dans les marges du tableau des effectifs croisés. 
+
+\begin{center}
+\begin{tabular}{r|rr|r}
+  \hline
+ & Décédé & Survivant & {\bf Total} \\ 
+  \hline
+Equipage &  & &  \\ 
+  Première &  & &  \\ 
+  Seconde &  & &  \\ 
+  Troisième & & & \\ 
+  \hline 
+  {\bf Total} &  &  & \\ 
+   \hline
+\end{tabular}
+\end{center}
+\item Compléter maintenant le tableau des effectifs attendus sous l'hypothèse d'indépendance entre les variables \emph{classe} et \emph{survie}. 
+
+\begin{center}
+\begin{tabular}{r|rr|r}
+  \hline
+ & Décédé & survivant & Total \\ 
+  \hline
+Equipage & &  & \\ 
+  Première &  &  &  \\ 
+  Seconde &  &  &  \\ 
+  Troisième &  &  &  \\ 
+  \hline
+  Total &  & &  \\ 
+   \hline
+\end{tabular}
+\end{center}
+
+\item Donner le tableau des effectifs croisés des variables \emph{survie} et \emph{age} à l'aide de la fonction \texttt{table} et compléter le tableau ci-dessous. Calculer les effectifs de chacune des modalités des variables \emph{age} et \emph{survie}. Ces effectifs pourront s'écrire dans les marges du tableau des effectifs croisés. 
+
+\begin{center}
+\begin{tabular}{r|rr|r}
+  \hline
+ & Décédé & Survivant & {\bf Total} \\ 
+  \hline
+Adulte &  & &  \\ 
+Enfant &  & &  \\ 
+  \hline 
+  {\bf Total} &  &  & \\ 
+   \hline
+\end{tabular}
+\end{center}
+\item Compléter maintenant le tableau des effectifs attendus sous l'hypothèse d'indépendance entre les variables \emph{age} et \emph{survie}. 
+
+\begin{center}
+\begin{tabular}{r|rr|r}
+  \hline
+ & Décédé & survivant & Total \\ 
+  \hline
+Adulte & &  & \\ 
+Enfant &  &  &  \\ 
+  \hline
+  Total &  & &  \\ 
+   \hline
+\end{tabular}
+\end{center}
+\item Peut-on affirmer, au risque de $5\%$, que les variables \emph{classe} et \emph{survie} sont "dépendantes"?
+Utiliser la fonction \texttt{chisq.test(VariableXasfactor,VariableYasfactor)}, où \texttt{VariableXasfactor} et \texttt{VariableYasfactor} sont les colonnes de la table de données correspondant respectivement aux 2 variables concernées. Attention, ces objets doivent être de classe \texttt{factor}. Comparer ces résultats avec ceux des questions précédentes. 
+
+\item Tester l'indépendance des variables \emph{sexe} et \emph{survie} puis \emph{age} et \emph{survie}. Conclure. 
+
+\item Réaliser l'AFC des variables  \emph{classe} et \emph{survie}. Combien d'axes factoriels peut-on choisir?
+Interpréter les résultats.
+\end{enumerate}
+\newpage
+
+\subsubsection*{Exercice 2}
+Les données du fichier "bebe.txt" concernent le poids à la naissance de bébés américains de sexe masculin, elles se présentent sous forme de data frame ayant 7 colonnes qui caractérisent le bébé et la mère.
+\begin{itemize}
+\item bwt : le poids du bébé à la naissance, en kgs
+\item weight : le poids de la mère au début de la grossesse, en kgs
+\item height : la taille de la mère, en cm; 
+\item age :  l'âge de la mère, en années; 
+\item gestation : la durée de la grossesse, en jours; 
+\item parity : TRUE si c'est la première grossesse de la mère, 
+FALSE sinon; 
+\item smoke : TRUE si la mère fume et FALSE sinon pas.
+\end{itemize}
+
+\begin{enumerate}
+\item Importer ce fichier de données sous \R.
+ \item Représenter un histogramme de l'age des mères à l'aide de "hist". Ajouter des descriptions des variables et un titre. Que remarquez-vous? Eliminer les observations qui vous semblent erronnées.
+  \item Représenter un histogramme du poids des bébés.
+  \item Tracer une estimation de la densité du poids des bébés avec la commande "plot(density(.))".
+ \item Etudier graphiquement la variable poids de la mère. Que remarquez-vous?
+ Eliminer les observations qui vous semblent erronnées.
+ \item Etudier graphiquement la relation entre les poids de la mère et du bébé. 
+\item  On considère les classes suivantes du poids de la mère $ (0,50],  (50,60],  (60,70], (70,120] $ et du poids du  bébé $(0,3], (3,3.5], (3.5,4],   (4,6] $.\\
+ Créer de nouvelles variables qualitatives \texttt{weightClass} et \texttt{bwtClass} en fonction des classes ci-dessus. On peut utiliser la fonction \texttt{cut}.
+\item Tester l'indépendance des variables \texttt{weightClass} et \texttt{bwtClass}. Conclure
+\item  Réaliser une AFC entre les poids de la mère et du bébé. Interpréter.
+\end{enumerate}
+
+\end{document}

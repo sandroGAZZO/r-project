@@ -1,0 +1,32 @@
+---
+title: "quizz"
+output: html_document
+---
+
+```{r quizz}
+
+N<-matrix(c(1,2,1,2,1,2,2,1), ncol=2)
+
+X<-matrix(c(1/sqrt(12),1/sqrt(6),sqrt(2)/6,sqrt(2)/3,1/sqrt(12),1/sqrt(6),sqrt(2)/3,sqrt(2)/6), ncol=2)
+X
+
+Y<-t(X)
+
+Z<-Y%*%X
+
+svd(Z)
+library("ggplot2")
+library("FactoMineR")
+library("factoextra")
+
+afc<-CA(N)
+length(afc)
+afc$eig
+afc$row
+afc$col
+plot(1:4,afc$row$coord)
+#plot(1:4,afc$row$coord,xlab="", ylab="", pch=c("E", "P", "S", "T"), col="blue")
+points(1:2,afc$col$coord, xlab="", ylab="", pch=c("D", "S"), col="red")
+```
+
+

@@ -1,0 +1,317 @@
+---
+title: "TP3 AD: Dellouve & Gazzo"
+output: html_document
+---
+
+$$\textbf{Exercice 3}$$
+$$\textit{I) Classification Ascendante Hiérarchique}$$
+$\textit{Méthode étape par étape}$
+
+On commence par initialiser nos données:
+
+```{r}
+library("FactoMineR")
+library("factoextra")
+A<-matrix(c(1,0,2,1,0,1,3,2,4,3,3,4,4,4),ncol=2, byrow=TRUE) # on défini X
+X<-as.data.frame(A) # changement de format
+colnames(X)<-c("var1", "var2") # on nomme les colonnes
+rownames(X)<-c("w1", "w2", "w3","w4","w5","w6","w7") # on nomme les lignes
+X # on affiche X
+```
+
+On cherche la partition en deux classes donnée par la Classification Ascendante Hiérarchique (CAH) (ayant comme critère d’agrégation la distance du saut de Ward? A ENLEVER ????).
+Dans un premier temps, on va regarder la matrice des distances, puis celle des distances au carré et enfin la matrice des sauts de ward avec la distance au carré.
+
+```{r}
+
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+dist
+##La matrice des distances au carré
+dist^2
+#La matrice des sauts de ward avec la distance au carré est:
+ward1<-(dist^2)/8
+ward1
+```
+
+On constate que les deux individus les plus proches sont $w_7$ et $w_5$ ou $w_7$ et $w_6$ (distance égale). On peut représenter plus "visuellement" ces matrices avec la fonction $\texttt{fviz_dist}$.
+```{r}
+fviz_dist(dist, lab_size = 8)
+```
+
+En omettant la diagonale inverse de cette matrice visuelle, on en arrive à la même conclusion qu'avant: les couples d'invidus $(w_5,w_7)$ et $(w_6,w_7)$ sont les plus proches.
+Il va donc falloir faire un choix et prendre $w_5$ ou $w_6$ et le regrouper avec $w_7$ pour ensuite calculer le centre de ce nouveau groupe. Nous avons choisi $w_5$ de façon arbitraire et nous obtenons $g_{57}=(3.5,4)$.
+```{r}
+##La plus petite perte d'inertie inter est entre w5 et W7
+pertemin1<-min(ward1)
+pertemin1
+```
+
+Comme précédemment, on va calculer les distances entre $w_1$,$w_2$,$w_3$,$w_4$,$w_6$ et $g_{57}$, puis les distances au carré et enfin avec le saut de ward.
+```{r}
+
+A<-matrix(c(1,0,2,1,0,1,3,2,3,4,3.5,4),ncol=2, byrow=TRUE) # on défini X
+X<-as.data.frame(A) # changement de format
+colnames(X)<-c("var1", "var2") # on nomme les colonnes
+rownames(X)<-c("w1", "w2", "w3","w4","w6","g57") # on nomme les lignes
+X # on affiche X
+
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+dist
+##La matrice des distances au carré
+dist^2
+#La matrice des sauts de ward avec la distance au carré est:
+ward1<-(dist^2)/8
+ward1
+
+fviz_dist(dist, lab_size = 8)
+```
+
+Après cette deuxième étape, on constate que ce sont les individus $w_6$ et $g_{57}$ qui sont les plus proches.
+Après les avoir regroupés, on obtient $g_{567}=(\frac{11}{3},\frac{11}{3})$, le centre du nouveau groupe.
+```{r}
+##La plus petite perte d'inertie inter est entre w6 et g57
+pertemin1<-min(ward1)
+pertemin1
+```
+
+A nouveau, on recalcule les distances entre $w_1$,$w_2$,$w_3$,$w_4$ et $g_{567}$.
+On continue ainsi jusqu'à ce que tous les $w_j, j \in 1 \dots 4$ soient dans une classe.
+
+```{r}
+
+A<-matrix(c(1,0,2,1,0,1,3,2,11./3,11./3),ncol=2, byrow=TRUE) # on défini X
+X<-as.data.frame(A) # changement de format
+colnames(X)<-c("var1", "var2") # on nomme les colonnes
+rownames(X)<-c("w1", "w2", "w3","w4","g567") # on nomme les lignes
+X # on affiche X
+
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+dist
+##La matrice des distances au carré
+dist^2
+#La matrice des sauts de ward avec la distance au carré est:
+ward1<-(dist^2)/8
+ward1
+##La plus petite perte d'inertie inter est entre w1 et w2
+# on avait aussi w1 w3 et w4 w2
+
+fviz_dist(dist, lab_size = 8)
+```
+
+Ici, on se retrouve dans un cadre un peu particulier: $(w_1,w_2)$, $(w_1,w_3)$ et $(w_2,w_4)$ sont les plus proches avec une distance égale. On a choisi de prendre $(w_1,w_2)$ et on a donc $g_{12}$ le centre de ce groupe tel que $g_{12}=(1.5,0.5)$.
+```{r}
+##La plus petite perte d'inertie inter est entre w1 et w2
+pertemin1<-min(ward1)
+pertemin1
+```
+
+Ici, on recalcule les distances entre $g_{12}$,$w_3$,$w_4$ et $g_{567}$.
+```{r}
+
+A<-matrix(c(1.5,0.5,0,1,3,2,11./3,11./3),ncol=2, byrow=TRUE) # on défini X
+X<-as.data.frame(A) # changement de format
+colnames(X)<-c("var1", "var2") # on nomme les colonnes
+rownames(X)<-c("g12", "w3","w4","g567") # on nomme les lignes
+X # on affiche X
+
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+dist
+##La matrice des distances au carré
+dist^2
+#La matrice des sauts de ward avec la distance au carré est:
+ward1<-(dist^2)/8
+ward1
+fviz_dist(dist, lab_size = 8)
+
+##La plus petite perte d'inertie inter est entre g12 et w3
+pertemin1<-min(ward1)
+pertemin1
+```
+
+On regroupe $w_3$ et $g_{12}$. On obtient $g_{123}=(1,\frac{2}{3})$. On arrive à la dernière étape des calculs de distances.
+```{r}
+
+A<-matrix(c(1,2./3,3,2,11./3,11./3),ncol=2, byrow=TRUE) # on défini X
+X<-as.data.frame(A) # changement de format
+colnames(X)<-c("var1", "var2") # on nomme les colonnes
+rownames(X)<-c("g123","w4","g567") # on nomme les lignes
+X # on affiche X
+
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+dist
+##La matrice des distances au carré
+dist^2
+#La matrice des sauts de ward avec la distance au carré est:
+ward1<-(dist^2)/8
+ward1
+fviz_dist(dist, lab_size = 8)
+##La plus petite perte d'inertie inter est entre g567 et w4
+pertemin1<-min(ward1)
+pertemin1
+
+```
+
+On a donc deux groupes: l'un composé de $w_1$, $w_2$ et $w_3$ et l'autre composé de $w_4$, $w_5$, $w_6$ et $w_7$.
+
+$\textit{Avec la fonction }\texttt{hclust}$
+
+En fait, ces étapes que l'on a détaillé, peuvent se résumer et s'écrire sous $\texttt{R}$ grâce à la fonction $\texttt{hclust}$. Observons de plus près cette fonction.
+```{r}
+A<-matrix(c(1,0,2,1,0,1,3,2,4,3,3,4,4,4),ncol=2, byrow=TRUE) # on défini X
+X<-as.data.frame(A) # changement de format
+colnames(X)=c("var1", "var2") # on nomme les colonnes
+rownames(X)=c("w1", "w2", "w3","w4","w5","w6","w7") # on nomme les lignes
+
+# Distance euclidienne
+## CAH sur des donnÃ©es brutes avec hclust ou eclust
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+# CAH avec Ward (option ward.D2 avec les distances au carrÃ© ou ward avec la distance)
+hc <- hclust(dist, method = "ward.D2")
+# Les regroupements pas Ã  pas
+hc$merge
+# La hauteur des branches est la distance
+hc$height
+# Arbre
+plot(hc, cex = 0.5)
+
+cut<-cutree(hc,k=2)
+print(sort(cut))
+```
+
+Comme observé précédemment avec la méthode étape par étape, la fonction $\texttt{hclust}$ a construit deux classes, regroupant d'un côté $w_1$, $w_2$ et $w_3$ et de l'autre w_4$, $w_5$, $w_6$ et $w_7$.
+
+!!COMMENTAIRE!! A ENLEVER???  On voit que si on veut deux classes, on obtient un premier groupe composé de $\omega_1$,$\omega_2$ et $\omega_3$; ainsi qu'un deuxième groupe composé de $\omega_4$,$\omega_5$,$\omega_6$ et $\omega_7$. 
+
+
+$\textit{Avec la fonction }\texttt{eclust}$
+
+Il existe également une autre fonction sous $\texttt{R}$ nommée $\texttt{eclust}$. 
+
+```{r}
+##CAH avec eclust de factoextra
+hc2 <- eclust(X, k.max=3,"hclust")
+hc2$merge
+hc2$height
+# dendrogamme
+fviz_dend(hc2) 
+## Couper le dendogramme pour avoir 2 classes
+coupe <- hcut(X, k = 2, hc_method = "complete")
+# Visualiser le dendrogramme avec les 2 classes
+fviz_dend(coupe, show_labels = FALSE, rect = TRUE)
+# Visualiser les classes en fonction des variables
+fviz_cluster(coupe, ellipse.type = "convex")
+# Visualize silhouhette information
+fviz_silhouette(coupe)
+```
+
+La fonction $\texttt{eclust}$ nous donne la même conclusion qu'avec $\texttt{hclust}$. Cependant, $\texttt{eclust}$ nous apporte davantage de précisions, ce qui n'est pas négligeable.
+On pourra donc utiliser les deux indépendamment en fonction de notre préférence.
+
+$\textbf{N.B.}$: On remarquera que $\texttt{eclust}$ nous donne la représentation graphique des clusters.
+
+
+$$\textit{II) Les k-means en 2 classes}$$
+
+Faisons la classiﬁcation avec $K = 2$ classes et de centres initiaux $w_5$ et $w_7$.
+On va procéder étape par étape. On prendra ici les distances, mais on aurait pu prendre les distances au carré ou le saut de Ward. Le but de cette première étape est de réunir les éléments les plus proches entre eux par rapport aux centres de départ (i.e. $w_5$ et $w_7$ dans notre cas).
+
+```{r}
+# Distance euclidienne
+
+A<-matrix(c(1,0,2,1,0,1,3,2,4,3,3,4,4,4),ncol=2, byrow=TRUE) # on défini X
+X<-as.data.frame(A) # changement de format
+colnames(X)<-c("var1", "var2") # on nomme les colonnes
+rownames(X)<-c("w1", "w2", "w3","w4","w5","w6","w7") # on nomme les lignes
+X # on affiche X
+
+dist <- dist(X, method = "euclidean")
+dist
+
+fviz_dist(dist, lab_size = 8)
+```
+
+On constate après cette première étape que $g_1$ est composé de $w_1$, $w_2$, $w_3$, $w_4$ et $w_5$ car ces éléments (hors $w_5$ qui y est par initialisation) sont plus proches de $w_5$ que de $w_7$; et $g_2$ de $w_6$ et $w_7$ (car $w_6$ plus proche de $w_7$ que de $w_5$).
+
+Continuons nos étapes, où le but sera maintenant de faire basculer, si besoin, des individus d'un groupe à l'autre car ils seront plus proches de l'autre groupe que de celui où ils sont actuellement. On continue jusqu'à ce que $g_1$ et $g_2$ restent les mêmes après une étape (i.e. qu'aucun individu ne change de groupe après une étape).
+```{r}
+
+A<-matrix(c(1,0,2,1,0,1,3,2,4,3,3,4,4,4,2,7./5,3.5,4),ncol=2, byrow=TRUE) # on défini X
+X<-as.data.frame(A) # changement de format
+colnames(X)<-c("var1", "var2") # on nomme les colonnes
+rownames(X)<-c("w1", "w2", "w3","w4","w5","w6","w7","g1","g2") # on nomme les lignes
+X # on affiche X
+
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+dist
+
+fviz_dist(dist, lab_size = 8)
+
+```
+
+
+Ici, $w_5$ passe dans $g_2$ car il est plus proche de $g_2$ que de $g_1$, alors qu'il était dans $g_1$. Comme $g_1$ et $g_2$ ne sont plus les mêmes, on refait une étape.
+```{r}
+
+A<-matrix(c(1,0,2,1,0,1,3,2,4,3,3,4,4,4,6./4,1,11/3,11/3),ncol=2, byrow=TRUE) # on défini X
+X<-as.data.frame(A) # changement de format
+colnames(X)<-c("var1", "var2") # on nomme les colonnes
+rownames(X)<-c("w1", "w2", "w3","w4","w5","w6","w7","g1","g2") # on nomme les lignes
+X # on affiche X
+
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+dist
+
+fviz_dist(dist, lab_size = 8)
+
+```
+
+C'est au tour de $w_4$ de passer de $g_1$ à $g_2$ pour les mêmes raisons que $w_5$ avait fait ce chemin précédemment.
+On refait donc une étape.
+```{r}
+
+A<-matrix(c(1,0,2,1,0,1,3,2,4,3,3,4,4,4,1,2./3,14./4,13./4),ncol=2, byrow=TRUE) # on défini X
+X<-as.data.frame(A) # changement de format
+colnames(X)<-c("var1", "var2") # on nomme les colonnes
+rownames(X)<-c("w1", "w2", "w3","w4","w5","w6","w7","g1","g2") # on nomme les lignes
+X # on affiche X
+
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+dist
+
+fviz_dist(dist, lab_size = 8)
+
+```
+
+Cette fois, aucun individu ne change de classe: $g_1$ et $g_2$ restent identiques et on obtient nos groupes finaux.
+On constate que l'on retrouve le même résultat que pour CAH, c'est à dire un groupe composé de $w_1$, $w_2$ et $w_3$ et un autre composé de $w_4$, $w_5$, $w_6$ et $w_7$.
+
+On passe maintenant aux graphiques via la fonction $\texttt{eclust}$:
+```{r}
+
+A<-matrix(c(1,0,2,1,0,1,3,2,4,3,3,4,4,4),ncol=2, byrow=TRUE) # on défini X
+X<-as.data.frame(A) # changement de format
+colnames(X)<-c("var1", "var2") # on nomme les colonnes
+rownames(X)<-c("w1", "w2", "w3","w4","w5","w6","w7") # on nomme les lignes
+X # on affiche X
+
+##K-means
+km <- eclust(X, "kmeans", k=2)
+km$cluster
+# Visualisation
+fviz_cluster(km, geom = "text")
+## Choix de k
+km <- eclust(X, "kmeans", nstart = 2, k.max=3)
+##Gap
+fviz_gap_stat(km$gap_stat)
+
+```
+

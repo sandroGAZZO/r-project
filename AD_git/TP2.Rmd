@@ -1,0 +1,241 @@
+---
+title: "TP2: Analyse de Données. Auteurs: Dellouve Théo et Gazzo Sandro."
+output: html_document
+---
+
+# Exo1
+```{r 1q1}
+tit<-read.table("titanic.csv", sep=",",header=TRUE) #on charge la table du titanic
+```
+
+
+```{r 1q2}
+tit$Age<-factor(tit$Age)
+levels(tit$Age)<-c("enfant","adulte") #on remplace 1 et 0 par adulte et enfant
+
+
+tit$Classe<-factor(tit$Classe)
+levels(tit$Classe)<-c("equipage","1ere classe","2eme classe","3eme classe")
+
+tit$Sexe<-factor(tit$Sexe)
+levels(tit$Sexe)<-c("femme","homme")
+
+tit$Survie<-factor(tit$Survie)
+levels(tit$Survie)<-c("décédé","survivant")
+
+
+```
+## Tableaux des effectifs croisés et des effectifs attendus
+
+```{r 1q3}
+
+table1<-table(tit$Classe,tit$Survie) #tabeau effectif croisé
+table1<-addmargins(table1) # rajoute les totaux
+table1
+```
+
+```{r 1q4}
+
+table2<-table1
+#on fait un produit en croix
+#table2 est une matrice
+table2[1]<-table2[5]*table2[11]/table2[15]
+table2[2]<-table2[5]*table2[12]/table2[15]
+table2[3]<-table2[5]*table2[13]/table2[15]
+table2[4]<-table2[5]*table2[14]/table2[15]
+
+table2[6]<-table2[10]*table2[11]/table2[15]
+table2[7]<-table2[10]*table2[12]/table2[15]
+table2[8]<-table2[10]*table2[13]/table2[15]
+table2[9]<-table2[10]*table2[14]/table2[15]
+
+table2 #VALEURS ATTENDUES
+
+
+```
+
+```{r 1q5}
+#on refait la même chose mais pour les enfants et adultes cette fois
+table3<-table(tit$Age,tit$Survie) #tabeau effectif croisé
+table3<-addmargins(table3) # rajoute les totaux
+table3
+```
+
+```{r 1q6}
+table4<-table3
+#toujours un produit en croix
+table4[1]<-table4[3]*table4[7]/table4[9]
+table4[2]<-table4[3]*table4[8]/table4[9]
+
+table4[4]<-table4[6]*table4[7]/table4[9]
+table4[5]<-table4[6]*table4[8]/table4[9]
+
+table4 #VALEURS ATTENDUES
+```
+
+## Test
+
+On va faire le test du Chi-deux d'indépendance suivant:
+$\mathcal{H}_0: \textit{la variable classe et la variable survie sont "indépendantes"}$ contre $\mathcal{H}_1: \textit{la variable classe et la variable survie sont "dépendantes"}$.
+
+```{r 1q7}
+VariableXasfactor<-as.factor(table1[1:4]) # colonne decede
+VariableYasfactor<-as.factor(table1[6:9]) # colonne survivant
+chisq.test(VariableXasfactor,VariableYasfactor)
+```
+La p-valeur est supérieure à $0.21$. On rejette donc $\mathcal{H}_0: \textit{la variable classe et la variable survie sont "indépendantes"}$ à $95\%$.
+
+Toujours par un test du Chi-deux d'indépendance:
+$\mathcal{H}_0: \textit{la variable sexe et la variable survie sont "indépendantes"}$ contre $\mathcal{H}_1: \textit{la variable sexe et la variable survie sont "dépendantes"}$.
+```{r 1q8}
+
+chisq.test(tit$Sexe,tit$Survie)
+```
+La p-valeur est inférieure à $0.05$. On ne rejette donc pas $\mathcal{H}_0$: $\textit{la variable sexe et la variable survie sont "indépendantes"}$ à $95\%$.
+
+
+Enfin, on va faire la même chose avec la variable âge:
+$\mathcal{H}_0: \textit{la variable âge et la variable survie sont "indépendantes"}$ contre $\mathcal{H}_1: \textit{la variable âge et la variable survie sont "dépendantes"}$.
+```{r 22q8}
+
+chisq.test(tit$Age,tit$Survie)
+
+
+```
+La p-valeur est inférieure à $0.05$. On ne rejette donc pas $\mathcal{H}_0: \textit{la variable âge et la variable survie sont "indépendantes"}$ à $95\%$.
+
+On conclut donc que la variable survie est dépendante de la variable classe mais pas des variables sexe et âge à $95 \%$.
+
+## AFC pour les variables classe et survie
+```{r 1q9}
+
+
+
+library("FactoMineR")
+library("factoextra")
+ca<-CA(table1) #AFC
+ca
+
+ca$eig
+
+ca$col
+
+ca$row
+
+
+```
+On ne peut choisir qu'un axe car une seule valeur propre, qui exprime la survie de l'individu. 
+On constate qu'il y a une attirance entre la première classe/la deuxième classe et survivant. De même, il y a une attirance entre la troisième classe/l'équipage et décés.
+```{r droite}
+plot(tit$Survie, tit$Classe)
+```
+
+
+# Exo2
+
+```{r 2q1}
+
+bebe<-read.table("bebe.txt", sep=" ",header=TRUE) #on stock la table
+summary(bebe)
+
+```
+
+## Histogramme
+```{r 2q2 hist}
+
+hist(bebe$age, freq=F,main="répartition de l'âge des mères", xlab="âge en années",ylab="fréquence observée")
+```
+
+Des femmes auraient eu un enfant à 99 ans. C'est une information erronée.
+
+```{r 2q2 rest}
+
+bebe2<-bebe[bebe$age!=99,] # on enleve les lignes avec age de 99 ans
+
+hist(bebe2$age, freq=F,main="répartition de l'âge des mères", xlab="âge en années",ylab="fréquence observée")
+#il n'y a plus de valeurs étranges
+```
+
+
+```{r 2q3}
+hist(bebe2$bwt, freq=F, breaks=70,main="répartition du poids des bébés", xlab="poids",ylab="fréquence observée")
+```
+
+## Estimation de densités
+```{r 2q4}
+plot(density(bebe2$bwt), main = "Estimation de la densité du poids des bébés", xlab="poids")
+```
+
+
+```{r 2q5 test}
+plot(density(bebe2$weight), main = "Estimation de la densité du poids des mères", xlab="poids")
+```
+
+Selon le graphique, il y aurait des femmes pesant une tonne. Ce sont des valeurs erronées.
+
+``` {r 2q5 conf}
+
+bebe3<-bebe2[bebe2$weight!=999,] #on enlève les valeurs erronées
+
+#on vérifie si cela est bien enlevé
+
+plot(density(bebe3$weight), main = "Estimation de la densité du poids des mères", xlab="poids")
+```
+
+On a bien enlevé les valeurs erronées.
+
+## Etude du poids de la mère et de l'enfant
+
+```{r 2q6}
+
+plot(bebe3$weight,bebe3$bwt, main="poids du bébé en fonction du poids de la mère", xlab="poids de la mère", ylab="poids du bébé")
+
+
+```
+
+C'est un nuage de points. Il y a donc indépendance entre le poids d'une mère et le poids de son enfant. 
+
+
+```{r 2q7}
+
+#création des nouvelles variables qualitatives 
+
+# d'abord 1, puis 2 puis 3...
+weightClass<-cut(bebe3$weight,c(0,50,60,70,120),label=F)
+
+
+bwtClass<-cut(bebe3$bwt,c(0,3,3.5,4,6),label=F)
+
+
+```
+
+
+```{r 2q8}
+
+chisq.test(weightClass,bwtClass) #test d'independance ?
+
+```
+
+La p-valeur est inférieure à $0.05$. On conserve $\mathcal{H}_0$: le poids de la mère et le poids de l'enfant sont indépendants à $95\%$. C'est cohérent avec ce qu'on a trouvé avant avant.
+
+
+```{r tut}
+table_bebe<-table(weightClass,bwtClass)
+ca<-CA(table_bebe)
+
+# #qualite des axes > par(mfrow=c(1,2)) 
+# barplot(ca$eig[,2], main= "inertie") 
+# barplot(ca$eig[,3], main="inertie cummulee") 
+# # observons que les v.p. sont infererieures `a 1. 
+# fviz_ca_row(ca, col.row = "cos2",  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),  repel = TRUE) 
+# fviz_ca_col(ca, col.col = "contrib",  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07")) 
+# fviz_ca_biplot(ca,col.row= "cos2",col.col="cos2",  repel = TRUE)
+
+
+```
+
+On constate qu'il y a attirance entre les premières classes entre elles, les deuxièmes classes entre elles, les troisièmes classes entre elles et les quatrièmes classes entre elles.
+
+Ainsi une mère ayant un poids plus grand aura plus de chance d'avoir un bébé avec un poids plus grand et inversement.
+Donc plus un des deux individus aura un poids plus grand, plus le deuxième individu aura un poids plus grand. De même, plus un des deux individus aura un poids plus petit, plus le deuxième aura un poids plus petit.
+

@@ -1,0 +1,509 @@
+% !TEX encoding = IsoLatin9
+\documentclass[a4,12pt,french]{article}
+\usepackage[frenchb]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{babel,fontenc,indentfirst,a4,longtable,ulem}
+\usepackage[dvips]{graphicx}
+\marginparwidth 0pt
+\oddsidemargin -1cm
+\evensidemargin 0pt
+\marginparsep 0pt
+\topmargin -1cm
+\textwidth 17.5cm
+\textheight 24cm
+\parindent 0mm
+
+\newcommand{\biz}{\begin{itemize}}
+\newcommand{\eiz}{\end{itemize}}
+\newcommand{\ben}{\begin{enumerate}}
+\newcommand{\een}{\end{enumerate}}
+\newcommand{\btab}{\begin{tabular}}
+\newcommand{\etab}{\end{tabular}}
+\newcommand{\barr}{\begin{array}}
+\newcommand{\earr}{\end{array}}
+\newcommand{\bcent}{\begin{center}}
+\newcommand{\ecent}{\end{center}}
+\newcommand{\ovl}{\overline}
+\newcommand{\bqa}{\begin{eqnarray}}
+\newcommand{\eqa}{\end{eqnarray}}
+\newcommand{\bqas}{\begin{eqnarray*}}
+\newcommand{\eqas}{\end{eqnarray*}}
+\newcommand{\dps}{\displaystyle}
+\newcommand{\psep}{\quad ; \quad}
+\newcommand{\intd}{\int \! \! \int}
+\newcommand{\noi}{\noindent}
+\newcommand{\exo}[1]{\vskip 0.2cm\noi\underline{EXERCICE #1}\vskip 0.1cm\noi}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\noi \begin{tabular}[t]{lr}
+\textbf{Statistique Spatiale} &\hskip 6cm \textbf{Ann\'{e}e Universitaire 2020/2021} \\
+%\textbf{Statistique Spatiale} &  \\
+\end{tabular}
+
+\noi
+\hrulefill
+
+\begin{center}
+\textbf{VARIOGRAMMES, KRIGEAGE}
+\end{center}
+\vskip 0.5cm
+Le logiciel utilis\'e est R, avec les packages {\it geoR} et {\it fields}.\\
+
+\begin{enumerate}
+\item
+{\bf Donn\'ees simul\'ees }
+On dispose d'une simulation d'un champ gaussien sur un carré 101$\times$101.
+On extrait 100 points du carré et on va reconstruire l'image sur le carré par krigeage.
+Pour cela il faudra d'abord ajuster un variogramme sur une fonction choisie.
+On comparera les résultats obtenus avec différents variogrammes à l'image originale.
+
+\begin{enumerate}
+\item {Visualisation}
+
+Le fichier {\it simu1.dat} contient une simulation d'un processus gaussien sur une grille
+101$\times$101.\\
+Charger le fichier  avec la fonction  \textit{read.table}.\\
+Les 3 variables: $x$ abcisse, $y$ ordonnée et $z$ valeur du champ sont en colonnes.\\
+Les fonctions \textit{summary} et \textit{hist} donnent les statistiques élémentaires et l'histogramme d'une variable.\\
+Visualiser le champ
+  avec la fonction \textit{image.plot}. Il faudra tout d'abord transformer le vecteur $z$ en
+une matrice avec la fonction \textit{matrix}.
+
+
+<<echo=FALSE>>=
+rm(list=ls())
+
+#--------------------------------------------
+# chargement des packages et fonctions utilises 
+#--------------------------------------------
+
+library(geoR)
+library(fields)
+library(automap)
+setwd("C:/Users/Sandro/Documents/R/Stats_spatiales")
+@
+
+<<>>=
+#---------------------------------
+# chargement du fichier de donnees
+#--------------------------------- 
+aniso = 0
+donnees = read.table("jeu1.dat")
+summary(donnees)
+donnees.simu = read.table("simu1.dat")
+x=donnees$V1
+y=donnees$V2
+#----graphique du champs--------
+grx = seq(0,100)
+gry = seq(0,100)
+
+Z = matrix(donnees.simu$V3,nrow=length(grx),ncol=length(gry),
+           byrow=F)
+titre = paste("Gaussian field")
+image.plot(grx,gry,Z,main=titre)
+points(x,y,pch=19)
+@
+\item
+{Krigeage}\\
+Le fichier {\it jeu1.dat} contient 100 points tir\'es au hasard parmi les pr\'ec\'edents.
+Le charger, visualiser les points avec la fonction \textit{points}, et créer un objet \textit{geodata}.
+\ben
+\item Variogramme empirique:\\
+Calculer et visualiser le variogramme empirique avec les fonctions \textit{variog} et \textit{plot}.
+Faire varier le nombre d'intervalles, les largeurs d'intervalle, la distance maximale.\\
+
+Le nuage variographique (sous forme de nuage de points ou de boxplot) est une nuée de $n(n-1)/2$ points ($\|s_i-s_j\|$, $(Z_{s_i}-Z_{s_i})^2/2$) permettant d'estimer sans biais 
+$\gamma(s_i-s_j)$ (le semi-variogramme aux sites $(s_i, s_j)$). Ce nuage n'est pas très lisible, il ne suffit pas pour avoir une idée sur les caractéristiques de $\gamma$ comme la portée, le palier ou la pépite. On utilise alors le variogramme expérimental pour une représentation de la variabilité spatiale plus visible.\\ 
+La simulation est isotropique, sinon (cas anisotropique) il peut être utile de représenter plusieurs variogrammes selon plusieurs directions de l’espace (en pratique on regarde les 4 orientations cardinales, S, SE, E, NE, avec la fonction "variog4").\\
+
+<<echo=TRUE>>=
+####
+# variogramme
+#------------
+# 1. Variogramme empirique
+#-------------------------
+geodata = as.geodata(donnees)#convertir les observations en geodata
+m.d = 50                    # distance maximale
+interv = seq(0,m.d,by=5)    # intervalles
+p.m = 10                   # nombre minimal de paire, 
+#en pratique on choisit 30 paires
+
+vario.c = variog(geodata,op="cloud")
+plot(vario.c,main = "",pch='+')
+vario.b = variog(geodata,max.dist=m.d,pairs.min=p.m,
+                 breaks=interv)
+
+plot(vario.b,main = "")
+vario.bc = variog(geodata,max.dist=m.d,pairs.min=p.m,
+                  breaks=interv,bin.cloud=TRUE)
+
+plot(vario.bc,main = "Box-plot sur le variogramme empirique",
+     bin.cloud=TRUE)
+#ou   sans choix de distance max ou nombre de couples de sites
+vario.b = variog(geodata)
+
+plot(vario.b,main = "")
+
+### Variogramme pluri-directionnelle
+
+vario.b4 = variog4(geodata)
+
+plot(vario.b4,main = "")
+@
+
+
+\item Variogramme ajust\'e:\\
+Ajuster le variogramme exp\'erimental avec les fonctions \textit{variofit} et \textit{lines}  selon les  mod\`eles sph\'erique,
+exponentiel, gaussien, Matern, avec ou sans p\'epite. La valeur de p\'epite peut \^etre impos\'ee ou
+optimis\'ee. \\
+Comparer les diff\'erents ajustements obtenus.\\
+
+On ajuste ici un modèle exponentiel en donnant des paramètres initiaux pour portée ($10$), palier ($1.5$) (on suppose qu'à la distance 10 le variogramme converge vers le palier et la covariance est proche de $0$) déduits du variogramme experimental. On suppose qu'il n'y a un effet pépite (la limite du variogramme en zéro ou variance d'un terme d'erreur). Une pépite peut être dûe a une erreur de mesure (variabilité de l’instrument de mesure ou un changement brusque dans l'espace de la variable mesurée). Le modèle paramètrique adapté doit être choisi parmi un ensemble de modèles de variagramme admissibles.
+
+<<>>=
+# 2. Ajustement du variogramme
+#-----------------------------
+c.m = "exponential"
+
+i.c = c(1.5,10)
+varioest = variofit(vario.b,cov.model = c.m,fix.kappa=TRUE, 
+ini.cov.pars=i.c,fix.nugget=T) ## on fixe la pepite à 0, "F" estime la pepite
+x11()
+titre = paste("modele ",c.m,", portee =",round(varioest$cov.pars[2],2),
+", palier =",round(varioest$cov.pars[1],2),
+"nu = ",round(varioest$kappa,2))
+plot(vario.b, main=titre)
+lines(varioest)
+@
+Le résultat de cette étude variographique nous dit que la variabiloté spatiale du processus est modélisée par un modèle exponentiel de portée 11.78 (au dela d'une distance de 11.78, la dépendance devient faible), un palier de 1.6 (le variogramme converge vers 1.6, la variabilité limite)
+
+\item Krigeage :\\
+A partir des diff\'erents variogrammes obtenus ci-dessus, r\'ealiser les cartes
+de krigeage (fonction \textit{krige.conv}) et de variance associ\'ee.
+La grille (fonction \textit{expand.grid}) peut \^etre plus ou moins fine
+(cela influe sur le temps de calcul).\\
+Discuter les r\'esultats obtenus.
+
+\een
+
+<<>>=
+# 3. Krigeage
+#------------
+grx = seq(0,100)
+gry = seq(0,100)
+grille = expand.grid(grx,gry)# l'ensemble S
+
+Kcontrol = krige.control(type.krige="ok",obj.model=varioest)
+#krigeage ordinaire
+Ocontrol = output.control(n.pred=100,simul=TRUE,thres=2)
+K = krige.conv(geodata,loc=grille,krige=Kcontrol)
+# l'échantillon est geodata (les 100 donnees de jeu1, 
+#l'ensemble S de prediction est la grille et la fonction de variogramme est l'exponentiel avec les parametres estimes par 
+
+variofit
+
+#####le resultat du krigeage
+
+Zkrige = matrix(K$predict,nrow=length(grx),ncol=length(gry),byrow=F)
+titre = paste("Krigeage avec un modele",c.m)
+image.plot(grx,gry,Zkrige,zlim=c(-5,5),main=titre)
+contour(grx,gry,Zkrige,levels=seq(-5,5),add=TRUE)
+points(x,y,pch=19)
+
+@
+Avec le variogramme optimal choisi (supposons que c'est le modèle exponentiel ci-dessus), on réalise une prédiction du processus spatial en plusieurs points $s_0$ dans une grille contenant l'échantillon ou pas (le krigeage donne une interpolation exacte; autrement dit $\hat{Z}_{s_0}={Z}_{s_0}$ si $s_0$ est un site de l'échantillon).\\ La variance de l'erreur de prédiction donne la qualité de l'interpolation, plus elle est proche de $0$ meilleure est la qualité de prédiction.
+
+<<>>=
+#####variance de l'erreur de prévision
+
+s=apply(cbind(K$krige.var,rep(0,length(K$krige.var))),1,max)
+Sigma = sqrt(matrix(s,nrow=length(grx),ncol=length(gry),
+                    byrow=F))
+titre = "Ecart-type de krigeage"
+image.plot(grx,gry,Sigma,zlim=c(0,2),main=titre)
+contour(grx,gry,Sigma,levels=seq(0,2,0.5),add=TRUE)
+points(x,y,pch=19)
+
+
+@
+
+\item Automatisation du krigeage avec Automap
+<<>>=
+### choix du variogramme automatisé
+donnees = read.table("jeu1.dat")
+grx = seq(0,100)
+gry = seq(0,100)
+grille = expand.grid(grx,gry)# l'ensemble S
+colnames(donnees)=c("x","y","z")
+coordinates(donnees) = ~x+y
+# Ici le modèle optimal est de Sphérique de paramètres 
+#de portee 40.20053, portee  1.5887879 et pepite 
+
+variogram = autofitVariogram(z~1,donnees)
+#variogram
+plot(variogram)
+
+###Krigeage avec choix automatique du variogramme
+grille2=as.data.frame(grille)
+colnames(grille2)=c("x","y")
+coords=SpatialPoints(grille2)
+kriging_result = autoKrige(z~1,donnees, coords)
+plot(kriging_result)
+#Sans grille
+
+kriging_result = autoKrige(z~1,donnees)
+plot(kriging_result)
+@
+La prédiction est très bonne (en particulier autour des points de l'échantillon), au regard de la carte des erreurs de prédiction. 
+\end{enumerate}
+
+\item {\bf Etude de cas : pollution de l'air}\\
+\noi On souhaite r\'ealiser une carte quotidienne de concentration d'ozone sur la r\'egion Parisienne.
+Pour cela on dispose chaque jour des sorties d'un mod\`ele d\'eterministe mis au point au
+Laboratoire de M\'et\'eorologie Dynamique (Ecole Polytechnique) et des mesures de
+concentration d'ozone effectu\'ees par AirParif en 21 stations.\\
+Le fichier {\it stationsKm4.txt} en format ascii contient un tableau form\'e des colonnes suivantes :
+
+    - colonne 1 : absisses (en km) des stations
+
+    - colonne 2 : ordonn\'ees (en km) des stations
+
+    - colonne 3 : mesures aux stations (en $\mu/m^3$)
+
+    - colonne 4 : valeur du mod\`ele aux stations
+
+\noi Le fichier {\it grilleKm4.txt} contient
+
+        - colonne 1 : absisses (en km) des points de grille
+
+    - colonne 2 : ordonn\'ees (en km) des points de grille
+
+    - colonne 3 : valeur du mod\`ele des points de grille
+
+\begin{enumerate}
+\item Tracer la carte des concentrations donn\'ees par le mod\`ele.
+<<echo=FALSE>>=
+donnees = read.table("stationsKm4.txt")
+
+grille = read.table("grilleKm4.txt")
+@
+
+<<>>=
+
+
+summary(donnees)
+x = donnees[,1]
+y = donnees[,2]
+z = donnees[,3]
+#hist(z)
+#-----------
+# modele
+#-------
+#View(grille)
+grxy = grille[,1:2]
+grx = seq(5,130,5)
+gry = seq(5,130,5)
+
+Zmod = matrix(grille[,3],nrow=length(grx),
+              ncol=length(gry),byrow=FALSE)
+titre = "Modele"
+image.plot(grx,gry,Zmod,zlim=c(100,250),main=titre,
+           col=tim.colors(64))
+contour(grx,gry,Zmod,levels=seq(100,250,50),add=TRUE)
+points(x,y,pch=19)
+
+
+@
+
+\item Faire une carte en estimant la concentration en chaque point de la grille
+ par krigeage \`a partir des mesures aux 21 stations. Comparer avec la carte pr\'ec\'edente.
+ 
+<<>>=
+#------------
+# variogramme
+#------------
+# 1. Variogramme empirique
+#-------------------------
+geodata = as.geodata(donnees)
+m.d = 100                     # distance maximale
+interv = seq(10,m.d,by=20)    # intervalles
+p.m = 2                       # nombre minimal de couples de stations
+
+### nuée variographique
+#vario.c = variog(geodata,op="cloud")
+#plot(vario.c,main = "",pch='+')
+
+vario.b = variog(geodata,max.dist=m.d,pairs.min=p.m,
+                 breaks=interv)
+
+plot(vario.b,main = "Variogramme empirique")
+
+# 2. Ajustement du variogramme
+#-----------------------------
+
+c.m = "gaussian"
+i.c = c(1000,50)
+varioest = variofit(vario.b,cov.model = c.m,ini.cov.pars=i.c)
+x11()
+titre = paste("modele ",c.m,", portee =",round(varioest$cov.pars[2],2),
+              ", palier =",round(varioest$cov.pars[1],2))
+plot(vario.b,main=titre)
+lines(varioest)
+
+@
+On peut également autiomatiser:
+
+<<>>=
+# Avec choix automatique du variogramme
+###Krigeage avec choix automatique du variogramme
+donnees2=as.data.frame(donnees[,1:3])
+colnames(donnees2)=c("x","y","z")
+grillexy=as.data.frame(grxy)
+colnames(grillexy)=c("x","y")
+coords=SpatialPoints(grillexy)
+coordinates(donnees2) = ~x+y
+kriging_result = autoKrige(z~1,donnees2, coords)
+x11()
+plot(kriging_result)
+
+#ou
+Zkrige = matrix(kriging_result$krige_output$var1.pred,
+nrow=length(grx),ncol=length(gry),byrow=FALSE)
+image.plot(grx,gry,Zkrige,zlim=c(100,300),main=titre,
+           col =tim.colors(64))
+titre = "Krigeage ordinaire"
+
+s=apply(cbind(kriging_result$krige_output$var1.var,
+rep(0,length(kriging_result$krige_output$var1.var))),1,max)
+Sigma = sqrt(matrix(s,nrow=length(grx),ncol=length(gry),byrow=FALSE))
+titre = "Ecart-type de krigeage"
+image.plot(grx,gry,Sigma,zlim=c(0,ceiling(max(Sigma))),
+           main=titre,col =tim.colors(64))
+points(x,y,pch=19)
+@
+
+ 
+\item On d\'esire combiner les 2 approches. Pour cela on corrige
+ le mod\`ele d\'eterministe en chaque point de la grille par une estimation de
+ la diff\'erence concentration-mod\`ele obtenue en krigeant les diff\'erences observation-mod\`ele
+ aux stations. \\
+Comparer aux deux cartes pr\'ec\'edentes. 
+
+<<>>=
+
+K=krige.conv(geodata,loc=grxy,krige=
+krige.control(type.krige="ok",obj.model=varioest))
+
+
+Zkrige = matrix(K$predict,nrow=length(grx),ncol=length(gry),
+                byrow=FALSE)
+titre = paste("Krigeage avec un modele",c.m)
+image.plot(grx,gry,Zkrige,zlim=c(100,250),main=titre)
+contour(grx,gry,Zkrige,levels=seq(100,250,50),add=TRUE)
+points(x,y,pch=19)
+
+s=apply(cbind(K$krige.var,rep(0,length(K$krige.var))),1,max)
+Sigma = sqrt(matrix(s,nrow=length(grx),ncol=length(gry),byrow=FALSE))
+titre = "Ecart-type de krigeage"
+image.plot(grx,gry,Sigma,zlim=c(0,ceiling(max(Sigma))),
+main=titre,col =tim.colors(64))
+contour(grx,gry,Sigma,levels=seq(0,ceiling(max(Sigma)),5),
+        add=TRUE)
+points(x,y,pch=19)
+#### A t-on raison de faire une interpolation ordinaire
+summary(lm(z~x+y)) 
+
+@
+Au regard de la variance de l'erreur, on voit que la prédiction par krigeage ordinaire est très bonne en particulier aux alentours des points de l'échantillon.\\
+Cependant, regardons  si la moyenne est constante ou une fonction linéaire des sites ("summary(lm(z~x+y))"), si le modèle linéaire est validé alors il faut un krieage universel. On a bien une tendance (moyenne non constante), un krigeage universel est plus adapté que l'ordinaire.
+<<>>=
+zerr=z-donnees[,4]
+geodata = as.geodata(cbind(x,y,zerr))
+m.d = 100                    # distance maximale
+interv = seq(10,m.d,by=20)    # intervalles
+p.m = 2                    # nombre minimal de paire
+
+vario.b = variog(geodata,max.dist=m.d,pairs.min=p.m,
+uvec=interv,messages.screen=FALSE)
+
+plot(vario.b,main = "Variogramme empirique")
+
+# 2. Ajustement du variogramme
+#-----------------------------
+c.m = "exponential"
+i.c = c(500,50)
+varioest = variofit(vario.b,cov.model = c.m,
+minimisation.function = "nls",ini.cov.pars=i.c,fix.nugget=T,
+fix.kappa=TRUE,max.dist=vario.b$max.dist)
+
+titre = paste("modele ",c.m,", portee =",
+round(varioest$cov.pars[2]*100)/100,", palier =",
+round(varioest$cov.pars[1]*100)/100)
+plot(vario.b,main=titre)
+lines(varioest)
+
+   
+# 3. Krigeage
+#------------
+grxy = grille[,1:2]
+grx = seq(5,130,5)
+gry = seq(5,130,5)
+K = krige.conv(geodata,loc=grxy,
+krige=krige.control(type.krige="ok",obj.model=varioest))
+
+## prediction combinée=krigeage de l'erreur+modele deterministe
+
+Zkrige = matrix(K$predict+grille[,3],nrow=length(grx),
+                ncol=length(gry),byrow=FALSE)
+titre = paste("Krigeage avec un modele",c.m)
+x11()
+titre = paste("Krigeage avec un modele",c.m)
+image.plot(grx,gry,Zkrige,zlim=c(0,250),main=titre,
+           col=tim.colors(64))
+contour(grx,gry,Zkrige,levels=seq(0,250,10),add=TRUE)
+points(x,y,pch=19)
+
+
+s=apply(cbind(K$krige.var,rep(0,length(K$krige.var))),1,max)
+Sigma = sqrt(matrix(s,nrow=length(grx),ncol=length(gry),byrow=FALSE))
+titre = "Ecart-type de krigeage"
+image.plot(grx,gry,Sigma,zlim=c(0,ceiling(max(Sigma))),
+           main=titre,col =tim.colors(64))
+#contour(grx,gry,Sigma,levels=seq(0,ceiling(max(Sigma))),add=TRUE)
+points(x,y,pch=19)
+
+@
+En automatisant:
+<<>>=
+
+# Choix automatique
+
+donnees3=donnees2
+donnees3$z=zerr
+
+kriging_result = autoKrige(z~1,donnees3, coords)
+plot(kriging_result)
+Zkrige = matrix(kriging_result$krige_output$var1.pred+
+grille[,3],nrow=length(grx),
+ncol=length(gry),byrow=FALSE)
+image.plot(grx,gry,Zkrige,zlim=c(100,250),main=titre,
+           col =tim.colors(64))
+points(x,y,pch=19)
+
+s=apply(cbind(kriging_result$krige_output$var1.var,
+rep(0,length(kriging_result$krige_output$var1.var))),1,max)
+Sigma = sqrt(matrix(s,nrow=length(grx),ncol=length(gry),
+                    byrow=FALSE))
+titre = "Ecart-type de krigeage"
+image.plot(grx,gry,Sigma,zlim=c(0,ceiling(max(Sigma))),
+           main=titre,col =tim.colors(64))
+points(x,y,pch=19)
+@
+La méthode combinée donne une meilleure prédiction que le modèle par krigeage avec les données aux stations ou le modèle 
+déterministe.
+\end{enumerate}
+
+
+\end{enumerate}
+\end{document}

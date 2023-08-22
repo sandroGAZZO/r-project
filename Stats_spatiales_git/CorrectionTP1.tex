@@ -1,0 +1,74 @@
+% !TEX encoding = IsoLatin9
+\documentclass[a4,12pt,french]{article}
+\usepackage[frenchb]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{babel,fontenc,indentfirst,a4,longtable,ulem}
+\usepackage[dvips]{graphicx}
+\marginparwidth 0pt
+\oddsidemargin -1cm
+\evensidemargin 0pt
+\marginparsep 0pt
+\topmargin -1cm
+\textwidth 17.5cm
+\textheight 24cm
+\parindent 0mm
+
+\newcommand{\biz}{\begin{itemize}}
+\newcommand{\eiz}{\end{itemize}}
+\newcommand{\ben}{\begin{enumerate}}
+\newcommand{\een}{\end{enumerate}}
+\newcommand{\btab}{\begin{tabular}}
+\newcommand{\etab}{\end{tabular}}
+\newcommand{\barr}{\begin{array}}
+\newcommand{\earr}{\end{array}}
+\newcommand{\bcent}{\begin{center}}
+\newcommand{\ecent}{\end{center}}
+\newcommand{\ovl}{\overline}
+\newcommand{\bqa}{\begin{eqnarray}}
+\newcommand{\eqa}{\end{eqnarray}}
+\newcommand{\bqas}{\begin{eqnarray*}}
+\newcommand{\eqas}{\end{eqnarray*}}
+\newcommand{\dps}{\displaystyle}
+\newcommand{\psep}{\quad ; \quad}
+\newcommand{\intd}{\int \! \! \int}
+\newcommand{\noi}{\noindent}
+\newcommand{\exo}[1]{\vskip 0.2cm\noi\underline{EXERCICE #1}\vskip 0.1cm\noi}
+
+\usepackage{Sweave}
+\begin{document}
+\input{CorrectionTP1-concordance}
+\noi \begin{tabular}[t]{lr}
+\textbf{Statistique Spatiale} &\hskip 6cm \textbf{Ann\'{e}e Universitaire 2020/2021} \\
+%\textbf{Statistique Spatiale} &  \\
+\end{tabular}
+
+\noi
+\hrulefill
+
+\begin{center}
+\textbf{VARIOGRAMMES, KRIGEAGE}
+\end{center}
+\vskip 0.5cm
+Le logiciel utilis\'e est R, avec les packages {\it geoR} et {\it fields}.\\
+
+\begin{enumerate}
+\item
+{\bf Donn\'ees simul\'ees }
+On dispose d'une simulation d'un champ gaussien sur un carré 101$\times$101.
+On extrait 100 points du carré et on va reconstruire l'image sur le carré par krigeage.
+Pour cela il faudra d'abord ajuster un variogramme sur une fonction choisie.
+On comparera les résultats obtenus avec différents variogrammes à l'image originale.
+
+\begin{enumerate}
+\item {Visualisation}
+
+Le fichier {\it simu1.dat} contient une simulation d'un processus gaussien sur une grille
+101$\times$101.\\
+Charger le fichier  avec la fonction  \textit{read.table}.\\
+Les 3 variables: $x$ abcisse, $y$ ordonnée et $z$ valeur du champ sont en colonnes.\\
+Les fonctions \textit{summary} et \textit{hist} donnent les statistiques élémentaires et l'histogramme d'une variable.\\
+Visualiser le champ
+  avec la fonction \textit{image.plot}. Il faudra tout d'abord transformer le vecteur $z$ en
+une matrice avec la fonction \textit{matrix}.
+
+

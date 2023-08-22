@@ -1,0 +1,231 @@
+---
+title: "f4"
+author: "Dellouve-Gazzo"
+date: "3 mars 2020"
+output: html_document
+---
+
+
+# Exercice 1
+
+```{r q1}
+
+logit<-function(x)
+{
+  return (log(x/(1-x)))
+}
+
+sig<-function(x)
+{
+  return(1/(1+exp(-x)))
+}
+
+```
+
+```{r q2}
+
+X<-runif(120,0,30) # 120 tirages de loi uniforme sur [0,30] , representant le temps de révision
+X
+
+```
+
+```{r q3}
+
+Z<-sig(-5+X/3)
+
+Y<-rbinom(120,1,Z) # on simule 120 loi de Bernouilli de parametre sig(-5+X/3), représentant la réussite ou non
+Y
+
+```
+
+```{r q5}
+plot(X,Y) # on trace la reussite selon le temmps de révision
+
+I<-seq(0,30,lenght=301) #abscisse
+lines(I,sig(-5+I/3), col='blue') #on trace la courbe représentant la probabilité de réussir l'examen en fonction du nombre d'heures de révision
+```
+
+```{r q6}
+
+rl<-glm(Y~X,family='binomial') # regression logistique
+summary(rl)
+
+```
+La fonction summary estime les coefficients. Elle permet également d'avoir la p-valeur et de savoir si on garde la donnée ou non. Ici, on garde les données.
+
+```{r q8}
+# estimateurs des coefficients :
+a<-rl$coefficients[[1]]
+b<-rl$coefficients[[2]]
+
+#superposition des graphes
+plot(X,Y)
+lines(I,sig(-5+I/3), col='blue')
+lines(I,sig(a+b*I),col='dark orange') #valeur prédites par la régression
+#ca sera la courbe approchée grâce aux estimations
+
+```
+
+```{r fitted}
+
+fitted(rl) 
+```
+fitted fait réference à l'estimation de sig(-5+X/3), c'est la probabilité que les Yi valent 1.
+
+#Exercice 2
+
+
+```{r 2q1}
+read.csv("cancerprostate.txt",sep=";",header=T)
+prost<-read.csv("cancerprostate.txt",sep=";",header=T) #on stocke la table
+summary(prost)
+
+
+```
+
+
+
+```{r 2q2}
+
+Y<-prost[6] # variable à expliquer
+Y<-Y[[1]]
+
+V<-prost[c(1,2)] # Avec acide
+W<-prost[c(1,7)] # Avec log-acide
+
+rl2_acide<-glm(Y~.,data=V,family='binomial') # regression logistique
+summary(rl2_acide)
+
+rl2_logacide<-glm(Y~.,data=W,family='binomial') # regression logistique
+summary(rl2_logacide)
+```
+
+AIC: 71.724 et age pas important pour acide
+
+AIC: 69.652 et age pas important pour log acide
+
+```{r 2q3}
+
+X<-prost[3:5] #on garde rayonx, taille et grade
+
+
+rl3<-glm(Y~.,data=X,family='binomial') #regression logistique avec les variables qualitatives
+summary(rl3)
+```
+
+grade pas important. taille pas important si on veut une précision supérieure à 90%.
+
+AIC: 60.78
+
+```{r 2q4}
+
+rl4_acide<-glm(Y~.,data=prost[-7],family='binomial') # regression logistique avec acide
+summary(rl4_acide)
+
+rl4_logacide<-glm(Y~.,data=prost[-2],family='binomial') # regression logistique avec log-acide
+summary(rl4_logacide)
+
+```
+
+avec acide 60.126  age et grade pas importants
+
+avec log acide AIC: 58.56 et age et grade pas importants
+
+```{r 2q5}
+
+library('MASS')
+rl5<-step(rl4_acide)
+
+M<-data.frame("age"=c(61,49,67,51),"acide"=c(0.60,0.86,0.72,0.95),"rayonx"=c(1,0,1,1),"taille"=c(0,0,0,1),
+              "grade"=c(1,1,1,1), "log.acid"=c(-0.51,-0.15,-0.33,-0.05))
+
+M
+
+
+```
+
+
+```{r 2q6}
+
+predict.glm(rl5,M,type="response") #on prédit les coefficients que l'on devrait avoir surla régression
+
+```
+
+
+#Exercice 3
+
+```{r 3q1}
+
+UCBAdmissions
+
+summary(UCBAdmissions)
+
+```
+
+```{r 3q2}
+X<-UCBAdmissions
+as.factor(X)
+
+dept<-rep(0,4526)
+dept[1:(sum(X[1:4]))]<-1 #dept=A
+dept[(sum(X[1:4])+1):(sum(X[1:8]))]<-2 #dept=B
+dept[(sum(X[1:8])+1):(sum(X[1:12]))]<-3 #dept=C
+dept[(sum(X[1:12])+1):(sum(X[1:16]))]<-4 #dept=D
+dept[(sum(X[1:16])+1):(sum(X[1:20]))]<-5 #dept=E
+dept[(sum(X[1:20])+1):(sum(X[1:24]))]<-6 #dept=F
+
+#plusieurs departements, des hommes et des femmes ayant postulées, les refusés et les admis
+
+#--------------------------------
+sexe<-rep(0,4526)
+#dept=A
+sexe[1:sum(X[1:2])]<-1
+
+for (i in 1:5)
+{
+sexe[(sum(X[1:(4*i)])+1):(sum(X[1:(4*i+2)]))]<-1
+}
+
+#1 pour des hommes, 0 pour des femmes pour la table sexe
+sum(sexe)
+#☺il y a 2691 hommes
+
+#--------------------------------
+adm<-rep(0,4526)
+
+adm[1:X[1]]<-1
+adm[((sum(X[1:2])+1):sum(X[1:3]))]<-1
+
+for(i in 1:5)
+{
+adm[(sum(X[1:(4*i)])+1):(sum(X[1:(4*i+1)]))]<-1
+adm[((sum(X[1:(4*i+2)])+1):sum(X[1:(4*i+3)]))]<-1
+}
+
+
+#1 pour des admis, 0 pour des réfusés pour la table adm
+sum(adm)
+#il y a 1755 admis
+
+
+
+```
+
+```{r 3q3}
+
+M<-data.frame("departement"=dept,"sexe"=sexe,"admission"=adm)
+#M représente le departement, le sexe et l'admission
+#1 à 6 pour les dpt de A à E
+# 0 et 1 pour sexe et adm
+
+rl6<-glm(adm~dept+sexe,family='binomial') # regression logistique
+summary(rl6) #sexe ne semble pas influente, AIC=5278.6
+
+
+```
+```{r 3q4}
+rl7<-step(rl6)
+
+#même conclusion
+```
+

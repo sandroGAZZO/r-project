@@ -1,0 +1,224 @@
+\documentclass[a4paper]{article}
+\usepackage[frenchb]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{Sweave}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{pdfpages}
+\usepackage{geometry}
+\geometry{hmargin=2.5cm,vmargin=1.5cm}
+
+\newlength{\fancyvrbtopsep}
+\newlength{\fancyvrbpartopsep}
+\makeatletter
+\FV@AddToHook{\FV@ListParameterHook}{\topsep=\fancyvrbtopsep\partopsep=\fancyvrbpartopsep}
+\makeatother
+\setlength{\fancyvrbtopsep}{1pt}
+\setlength{\fancyvrbpartopsep}{1pt}
+\newcommand{\R}{\textbf{R}}
+
+\title{Correction des Exercices du TD4}
+\date{}
+\begin{document}
+\includepdf{file.pdf}
+\SweaveOpts{concordance=TRUE}
+\setkeys{Gin}{width=0.5\textwidth}
+\maketitle{}
+\paragraph{Objectifs}
+\begin{itemize}
+ 
+\item Savoir faire une classification par CAH ou k-means  avec \R.
+\end{itemize}
+La CAH (classification ascendante hierarchique peut se faire avec la fonction "hclust" de la libraire MASS ou "eclust" de factoextra ou HCPC de la librairie FactoMineR sur les résultats d'une analyse factorielle.). La classification par moyennes mobiles (K-means) peut se faire avec la fonction "eclust" de factoextra.
+\section{Exemple} 
+
+Soit la matrice  de données suivante les observations de 2 variables sur $n=4$ indidivus.
+$$\displaystyle X=\left(\begin{array}{cc}
+2 &12\\
+4 & 10\\
+5 & 7\\
+4 & 5\\
+\end{array}\right)
+$$
+Faisons les classifications CAH et K-means (Moyenne mobiles) avec la distance euclidienne.
+\begin{itemize}
+\item CAH
+\begin{itemize}
+
+\item Matrice des distances
+
+ 
+\begin{tabular}{|l||r|r|r|}
+\hline
+			&x1 &x2 &x3\\   
+\hline
+\hline   
+x2 & $\sqrt 8$ &  & \\    
+x3&  $\sqrt{34}$&  $\sqrt{10}$  &\\
+x4 & $\sqrt{53}$&  5&  $\sqrt{5}$\\
+\hline
+\end{tabular}
+
+
+<<fig=TRUE>>=
+library("FactoMineR")
+library("factoextra")
+A=matrix(c(2,12,4,10,5,7,4,5),ncol=2, byrow=TRUE)
+X=as.data.frame(A)
+colnames(X)=c("var1", "var2")
+rownames(X)=c("x1", "x2", "x3","x4")
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+dist
+fviz_dist(dist, lab_size = 8)
+@
+
+
+\item Etape 1: Les 2 individus les plus proches sont $x_3$ et $x_4$, $d(x_3,x_4)=2.23$ est la plus petite, on les regroupe, le centre du groupe composé de ces 2 individus est $g_{34}=(4.5,6)$ (noeud 5). 
+Le saut de ward correspondant est $(1/2)d(x_3,x_4)=1.115$.
+
+On recalcule les distances entre $x_1$ et $x_2$ et $g_{34}$. La matrice des distances est\\
+\begin{tabular}{|l||r|r|r|}
+\hline
+			&x1 &x2 &$g_{34}$\\   
+\hline
+\hline   
+x2 & $\sqrt 8$ &  & \\    
+$g_{34}$&  $\sqrt{42.25}$&  $\sqrt{16.25}$  &\\
+\hline
+\end{tabular}
+\item Etape 2:
+<<fig=TRUE>>=
+library("FactoMineR")
+library("factoextra")
+A=matrix(c(2,12,4,10,4.5,6),ncol=2, byrow=TRUE)
+X=as.data.frame(A)
+colnames(X)=c("var1", "var2")
+rownames(X)=c("x1", "x2", "g34")
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+dist
+fviz_dist(dist, lab_size = 8)
+@
+Les 2 individus les plus proches sont $x_1$ et $x_2$,est la plus petite, on les regroupe, le centre du groupe composé de ces 2 individus est $g_{12}=(3,11)$ (noeud 6). Le saut de ward correspondant est $(1/2)d(x_1,x_2)=1.41$.
+\item Etape final: on regroupe les deux centres 
+$g_{12}$ et $g_{34}$.
+<<fig=TRUE>>=
+library("FactoMineR")
+library("factoextra")
+A=matrix(c(2,12,4,10,5,7,4,5),ncol=2, byrow=TRUE)
+X=as.data.frame(A)
+colnames(X)=c("var1", "var2")
+rownames(X)=c("x1", "x2", "x3","x4")
+# Distance euclidienne
+## CAH sur des données brutes avec hclust ou eclust
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+# CAH avec Ward (option ward.D2 avec les distances au carré ou ward)
+hc <- hclust(dist, method = "ward.D2")
+# Figure
+plot(hc, cex = 0.5)
+
+##CAH avec eclust de factoextra
+hc2 <- eclust(X, k.max=3,"hclust")
+# dendrogamme
+fviz_dend(hc2) 
+## Couper le dendogramme pour avoir 2 classes
+coupe <- hcut(X, k = 2, hc_method = "complete")
+# Visualiser le dendrogramme avec les 2 classes
+fviz_dend(coupe, show_labels = FALSE, rect = TRUE)
+# Visualiser les classes en fonction des variables
+fviz_cluster(coupe, ellipse.type = "convex")
+# Visualize silhouhette information
+fviz_silhouette(coupe)
+@
+\end{itemize}
+
+
+
+\item K-means avec $K=2$ classes et des graines initiales $x_1$ et $x_3$.
+
+\begin{itemize}
+\item Etape 1:  $x_2$ est plus proche de  $x_1$ que de  $x_3$, on l'affecte alors au groupe de  $x_1$;  $x_4$ est plus proche de  $x_3$ que la graien  $x_1$, on l'affecte alors au groupe de  $x_3$. On a alors les groupes $C_1^1=\{x_1,x_2\}$ et  $C_2^1=\{x_3,x_4\}$
+\item On calcule les distances entre les centres $g_1=(3,11)$ et $g_2=(4.5,6)$  des groupes $C_1$ et $C_2$ et les individus: 
+<<>>=
+library("FactoMineR")
+library("factoextra")
+A=matrix(c(2,12,4,10,5,7,4,5,3,11,4.5,6),ncol=2, byrow=TRUE)
+X=as.data.frame(A)
+colnames(X)=c("var1", "var2")
+rownames(X)=c("x1", "x2", "x3", "x4", "g1", "g2")
+# Distance euclidienne
+dist <- dist(X, method = "euclidean")
+dist
+@
+On remarque que $d(x_1,g_1)<d(x_1,g_2)$ et $d(x_2,g_1)<d(x_2,g_2)$ et $d(x_3,g_2)<d(x_3,g_1)$ et $d(x_4,g_2)<d(x_4,g_1)$ donc les deux groupes ne changent pas: $C_1^2=C_1^1=\{x_1,x_2\}$ et  $C_2^2=C_2^1=\{x_3,x_4\}$. 
+\item Etape final: la partition en 2 classes est 
+$C_1=\{x_1,x_2\}$ et  $C_2=\{x_3,x_4\}$
+
+<<fig=TRUE>>=
+A=matrix(c(2,12,4,10,5,7,4,5),ncol=2, byrow=TRUE)
+X=as.data.frame(A)
+colnames(X)=c("var1", "var2")
+rownames(X)=c("x1", "x2", "x3", "x4")
+
+##K-means
+km <- eclust(X, "kmeans", k=2)
+km$cluster
+# Visualisation
+fviz_cluster(km, geom = "text")
+## Choix de k
+km <- eclust(X, "kmeans", nstart = 2, k.max=3)
+##Gap
+fviz_gap_stat(km$gap_stat)
+
+@
+\end{itemize}
+
+
+
+\end{itemize}
+
+
+\section{Exemple 2} 
+<<fig=TRUE>>=
+boeufs=read.table("/Users/Sandro/Documents/R/AD/data_boeufs.txt",header=TRUE,dec=',')
+library("FactoMineR")
+library("factoextra")
+activedata=boeufs[,2:7]
+pca <- PCA(activedata, graph = FALSE)
+# CAH sur les résultats de l'ACP
+res <- HCPC(pca, graph = FALSE)
+## Dendogramme suggére 3 classes
+fviz_dend(res, cex = 0.7, palette = "jco", rect = TRUE, rect_fill = TRUE, # ajouter des rectangles autour des groupes 
+rect_border = "jco"          # bordures rectangle 
+)
+## Les classes sur les plans factoriels
+fviz_cluster(res,repel = TRUE, show.clust.cent = TRUE, # montrer les  centres des classes
+palette = "jco",ggtheme = theme_minimal(),main = "Factor map"
+)
+## Données avec classes
+head(res$data.clust, 10)
+## Variables qui décrivent le plus les classes
+res$desc.var$quanti
+## Les composantes qui sont le plus associées aux classes
+res$desc.axes$quanti
+## Les individus qui représent le plus les classes
+res$desc.ind$para
+
+## Interface graphique
+
+#require(Factoshiny)
+#hc4 <- HCPCshiny(activedata)
+
+## K-means avec 3 classes
+
+km <- eclust(activedata, "kmeans", k=3)
+
+## Choix de k
+km <- eclust(activedata, "kmeans", nstart = 2, k.max=10)
+km
+fviz_gap_stat(km$gap_stat)
+@
+
+\end{document}
