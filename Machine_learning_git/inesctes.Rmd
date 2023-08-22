@@ -1,0 +1,42 @@
+---
+title: "Insectes"
+output: html_document
+---
+
+```{r}
+insects<-read.table("insectes.txt")
+summary(insects) 
+# 21 dans groupe A, 22 dans groupe B et 31 dans groupe C
+apply(insects,2,sd) 
+# variable la plus dispersée : V1, la moins dispersée : V5
+
+# Centres de gravité
+g_classes <- sapply(c("A","B","C"),FUN = function(char){apply(insects[insects$V7==char,1:6],2,mean)})
+g_tot <- apply(insects[,1:6],2,mean)
+g_classes
+g_tot
+
+# Découpage de la base de données en une partie apprentissage et une partie test
+rows <- sample(1:nrow(insects),30,replace = FALSE)
+train <- insects[rows,]
+test <- insects[-rows,]
+
+library("MASS")
+afd_app <- lda(V7~.,data=train,scores=TRUE)
+class_test <- predict(afd_app,test)
+
+table(class_test$class,test$V7)
+```
+
+```{r}
+## avec le package ade4
+library("ade4")
+##insectes
+afd2 <- discrimin(dudi = dudi.pca(df = insects[, 1:6], nf = 2, scannf = FALSE), fac = insects$V7, scannf = FALSE, nf = 2)
+plot(afd2)
+
+##train
+afd_t <- discrimin(dudi = dudi.pca(df = train[, 1:6], nf = 2, scannf = FALSE), fac = train$V7, scannf = FALSE, nf = 2)
+plot(afd_t)
+```
+```

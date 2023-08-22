@@ -1,0 +1,108 @@
+---
+title: 'Classification Supervisée: Régression Logistique'
+author: "Sandro Gazzo & Théo Dellouve"
+date: "23/10/2020"
+output: 
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+\section{Etude sur le diabète: Identification des risques associés}
+
+Ici, nous allons tenter d'identifier quels sont les facteurs de risques associés à la présence du diabète. Pour cela, on va utiliser une base de données comportant certaines caractéristiques cliniques d'un certain nombre de patients.
+On va, dans un premier temps, décrire la base de données.
+\
+
+On a 768 patients pour lesquels on a relevé 9 caractéristiques:
+\begin{itemize}
+  \item \texttt{Pregnancies}: nombre de grossesses;
+  \item \texttt{Glucose}: taux de glucose;
+  \item \texttt{BloodPressure}: pression sanguine;
+  \item \texttt{SkinThickness}: épaisseur de la peau;
+  \item \texttt{Insulin}: taux d'insuline;
+  \item \texttt{BMI}: Indice de Masse Corporelle (IMC);
+  \item \texttt{DiabetesPedigreeFunction}: taux d'hérédité du diabète;
+  \item \texttt{Age}: âge;
+  \item \texttt{Outcome}: si le patient est atteint du diabète ou non (1: a le diabète, 0: n'a pas le diabète).
+\end{itemize}
+
+```{r, include=FALSE}
+library(ggplot2)
+
+diabete<-read.csv("C:/Users/Sandro/Documents/R/Meth_app/diabetes.csv",header=TRUE)
+
+summary(diabete)
+str(diabete)
+```
+On procède à une régression logistique en fonction de \texttt{Outcome}. La régression logistique a pour objectif de déterminer si un futur patient est atteint du diabète en fonction des caractéristiques cliniques.
+```{r, include=FALSE}
+log.diab<-glm(Outcome ~ .,family="binomial", data=diabete)
+log.diab
+
+summary(log.diab)
+
+```
+
+Après avoir créé le modèle, on va pouvoir déterminer les facteurs de risques à l'aide des odds-ratios. Les odds-ratios permettent de mesurer l'effet d'un facteur sur le fait d'avoir le diabète.
+
+```{r, include=FALSE}
+coef.reg <- coef(log.diab) #Pour extraire la colonne "estimate" de
+# glm (i.e. Beta chapeau)
+
+ci.reg<-confint(log.diab)
+
+exp(coef.reg) # récupère les odds-ratio
+# exemple: le fait d'être enceinte multiplie le
+# risque par 1.13
+
+exp(ci.reg) #on cherche les IC qui ne contiennent pas 1
+
+cbind(exp(coef.reg),exp(ci.reg))
+
+# Effet d'une augmentation de l'âge de 10 (ans)
+coef.age<- coef.reg["Age"]
+coef.age.plus10 <- 10*coef.age
+exp(coef.age.plus10)
+
+ci.age.plus10<-10*ci.reg["Age",]
+exp(ci.age.plus10)
+
+
+#print("Odds-R pour l'âge qui augmente de 10 ans :", exp(coef.age.plus10),
+      #"Odds-R intervalle de conf à 95%:[",exp(ci.age.plus10)[1], ";",exp(ci.age.plus10)[2]"]")
+
+
+library("broom")
+tidy(log.diab)
+
+library("gtsummary")
+tbl_regression(log.diab)
+```
+
+```{r, echo=FALSE}
+library("forestmodel")
+forest_model(log.diab)
+
+```
+
+``` {r, include=FALSE}
+library("GGally")
+ggcoef(log.diab)
+
+```
+
+
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+

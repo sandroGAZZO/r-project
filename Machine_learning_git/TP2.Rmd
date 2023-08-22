@@ -1,0 +1,226 @@
+---
+title: "TP2"
+author: "Sandro Gazzo"
+date: "18 septembre 2020"
+output: html_document
+---
+
+```{r}
+data1<-read.table("data1_adg.txt", header=TRUE)
+head(data1)
+summary(data1)
+```
+On va devoir classer V3, les variables explicatives sont V1 et V2
+```{r}
+plot(data1$x1,data1$x2,pch=19)
+plot(data1$x1,data1$x2,pch=19,col=data1$group)
+
+##beaucoup trop long, ce qui est avant est mieux
+# groupe1<-data1$group==1
+# groupe2<-data1$group==2
+# 
+# graph1<-data1[groupe1,1:2]
+# graph2<-data1[groupe2,1:2]
+# 
+# plot(graph1, col="red")
+# points(graph2,col="blue")
+
+
+
+library(ggplot2)
+ggplot(data=data1,aes(x=x1,y=x2,color=as.factor((group))))+
+  geom_point(size=3) + scale_color_discrete("Groupe")
+# fonction graphe ggplot
+# geom_point trace les points et modifie la taille
+# scale_color_discrete modifie la légende
+# NB: mettre des + pour les commandes et pour pouvoir modifier (ouleur, légende...)
+#scale_color_brewer(palette="Dark") <----- change la palette des couleurs
+```
+On vient de créer le nuage de points.
+
+```{r}
+library(MASS)
+library(dplyr)
+data1$group<-as.factor(data1$group)
+summary(data1)
+#On transforme en facteur (mieux, à faire toujours même si pas utile)
+ldat1<-lda(group~., data=data1)
+qdat1<-qda(group~.,data=data1)
+ldat1
+qdat1
+
+str(ldat1) #sa prédiction de lda
+str(qdat1) #sa prédiction de qda
+
+pred_lda<-predict(ldat1)
+pred_qda<-predict(qdat1)
+head(pred_lda$posterior)
+head(pred_qda$posterior)
+```
+Les deux fonctions donnent la même chose pour le jeu de données data1_adg
+
+```{r}
+### Frontière de décision ###
+
+# 300 points espacés entre -2 et 7
+xgrille<- seq(-2,7,length.out = 300)
+# de même pour 0 à 5
+ygrille <- seq(0,5,length.out = 300)
+
+# on créé la grille
+grille<-expand.grid(xgrille,ygrille)
+# on renomme les axes
+names(grille)<-c("x1","x2")
+plot(grille)
+
+lda.grille<- predict(ldat1,newdata=grille)
+qda.grille<- predict(qdat1,newdata=grille)
+
+plot(data1$x1,data1$x2,pch=19,col=data1$group)
+points(grille$x1,grille$x2,col=lda.grille$class,pch=".")
+
+plot(data1$x1,data1$x2,pch=19,col=data1$group)
+points(grille$x1,grille$x2,col=qda.grille$class,pch=".")
+
+
+## avec ggplot
+
+```
+
+```{r}
+### JEU DE DONNÉES 2 ###
+# par simplification (flemme), data1 sera comme si cela était data2
+data1<-read.table("data2_adg.txt", header=TRUE)
+head(data1)
+summary(data1)
+```
+On va devoir classer V3, les variables explicatives sont V1 et V2
+```{r}
+plot(data1$x1,data1$x2,pch=19)
+plot(data1$x1,data1$x2,pch=19,col=data1$group)
+
+##beaucoup trop long, ce qui est avant est mieux
+# groupe1<-data1$group==1
+# groupe2<-data1$group==2
+# 
+# graph1<-data1[groupe1,1:2]
+# graph2<-data1[groupe2,1:2]
+# 
+# plot(graph1, col="red")
+# points(graph2,col="blue")
+
+
+
+library(ggplot2)
+ggplot(data=data1,aes(x=x1,y=x2,color=as.factor((group))))+
+  geom_point(size=3) + scale_color_discrete("Groupe")
+# fonction graphe ggplot
+# geom_point trace les points et modifie la taille
+# scale_color_discrete modifie la légende
+# NB: mettre des + pour les commandes et pour pouvoir modifier (ouleur, légende...)
+#scale_color_brewer(palette="Dark") <----- change la palette des couleurs
+```
+On vient de créer le nuage de points.
+
+```{r}
+library(MASS)
+library(dplyr)
+data1$group<-as.factor(data1$group)
+summary(data1)
+#On transforme en facteur (mieux, à faire toujours même si pas utile)
+ldat1<-lda(group~., data=data1)
+qdat1<-qda(group~.,data=data1)
+ldat1
+qdat1
+
+str(ldat1) #sa prédiction de lda
+str(qdat1) #sa prédiction de qda
+
+pred_lda<-predict(ldat1)
+pred_qda<-predict(qdat1)
+head(pred_lda$posterior)
+head(pred_qda$posterior)
+```
+Les deux fonctions donnent la même chose pour le jeu de données data1_adg
+
+```{r}
+### Frontière de décision ###
+
+# 300 points espacés entre -2 et 7
+xgrille<- seq(-3,3,length.out = 300)
+# de même pour 0 à 5
+ygrille <- seq(-4,4,length.out = 300)
+
+# on créé la grille
+grille<-expand.grid(xgrille,ygrille)
+# on renomme les axes
+names(grille)<-c("x1","x2")
+
+lda.grille<- predict(ldat1,newdata=grille)
+qda.grille<- predict(qdat1,newdata=grille)
+
+plot(data1$x1,data1$x2,pch=19,col=data1$group)
+points(grille$x1,grille$x2,col=lda.grille$class,pch=".")
+
+plot(data1$x1,data1$x2,pch=19,col=data1$group)
+points(grille$x1,grille$x2,col=qda.grille$class,pch=".")
+
+```
+
+
+###EXO 2: le diabète
+```{r}
+data<-read.csv("diabetes.csv",header=TRUE)
+head(data)
+summary(data)
+str(data) #structure des données
+data$Outcome<-as.factor(data$Outcome)
+str(data) #regarder les "levels"
+
+n<-nrow(data)
+id.appr<-sample.int(n,0.8*n)
+# données pour apprentissage
+data.appr<-data[id.appr,]
+# données test
+data.test <- data[-id.appr,]
+
+
+data.lda<- lda(Outcome ~ ., data=data.appr)
+#str(data.lda)
+
+#### Matrice de confusion ####
+mc<-table(data.appr$Outcome,predict(data.lda)$class)
+mc
+sum(diag(mc))/sum(mc)
+
+test.pred<- predict(data.lda, newdata=data.test)
+mctest<- table(data.test$Outcome,test.pred$class)
+sum(diag(mctest))/sum(mctest) # c'est celui à retenir car données tests: on ne fait pas ça sur le modèle
+
+# pred.lda<- predict(data.lda)
+# 
+# test.pred<- predict(data.lda,data.test)
+# test.pred.out<- test.pred$Outcome
+
+data.qda <- qda(Outcome ~ .,data=data.appr)
+#str(data.qda)
+
+#### Matrice de confusion ####
+mc<-table(data.appr$Outcome,predict(data.qda)$class)
+mc
+sum(diag(mc))/sum(mc)
+
+test.pred<- predict(data.qda, newdata=data.test)
+mctest<- table(data.test$Outcome,test.pred$class)
+sum(diag(mctest))/sum(mctest) # c'est celui à retenir car données tests: on ne fait pas ça sur le modèle
+
+
+```
+On choisit lda car le modèle est plus simple et nous avons des résultats quasiment similaires.
+
+FIN DU TP2
+
+Revoir ggplot
+
+
+
